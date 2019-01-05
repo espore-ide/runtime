@@ -1,15 +1,15 @@
+local updater = require("updater")
+local pformat = require("pformat")
+
 function unrequire(m)
     package.loaded[m] = nil
     _G[m] = nil
 end
 
-function TestUpdater()
-    local Updater = require("updater")
-    Updater.check("http://192.168.1.29:8080", function()
-            printf("done!!")
-        end)
+updater.check("192.168.1.29", 8080, "", function (err)
+    print(pformat("Update result: %s", err))
     unrequire("updater")
-end
-
-
-TestUpdater()
+    file.remove("fw-etag.txt")
+    file.remove("fw-files.json")
+    print("heap:", node.heap())
+end)
