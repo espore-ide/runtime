@@ -1,0 +1,5 @@
+hashobj = crypto.new_hash("SHA1")
+hashobj:update("FirstString")
+hashobj:update("SecondString")
+digest = hashobj:finalize()
+print(crypto.toHex(digest))

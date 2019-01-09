@@ -48,8 +48,11 @@ Updater.check = function(host, port, basePath, callback)
     local fm
     local fmFile="fw-files.json"
     local etag = readEtag()
-    http.get("http://" .. host .. ":" .. port .. "/" .. basePath .. "/" .. node.chipid() .. ".json",
-        'If-None-Match: "' .. etag ..'"\r\n', function (code, body, headers)
+    local url=string.format("http://%s:%d%s/%s.json",host,port,basePath, node.chipid())
+    local headers = {
+        ["If-None-Match"] = etag
+    }
+    http.get(url,{headers=headers}, function (code, body, headers)
             if code == 304 then
                 callback()
             else
@@ -96,18 +99,10 @@ Updater.check = function(host, port, basePath, callback)
             callback(err)
         end
         function finishOff()
-            local rbfile="rename-backup"
             for _, entry in ipairs(dlist) do
-                file.remove(rbfile)
-                file.rename(entry.localfile, rbfile)
-                if not file.rename(entry.tmpfile, entry.localfile) then
-                    file.remove(entry.localfile)
-                    file.rename(rbfile, entry.localfile)
-                    cancel(pformat("Cannot rename %s to %s", entry.tmpfile,entry.localfile))
-                    return
-                end
+                file.remove(entry.localfile)
+                file.rename(entry.tmpfile, entry.localfile)
             end
-            file.remove(rbfile)
             writeEtag(etag)
             writeJSON(fmFile, fm)
             callback()   

@@ -1,4 +1,4 @@
-Debounced = {}
+local Debounced = {}
 
 function Debounced:new(pin, bounce)
     local o = {}
