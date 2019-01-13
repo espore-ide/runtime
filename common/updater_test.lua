@@ -6,7 +6,7 @@ function unrequire(m)
     _G[m] = nil
 end
 
-updater.check("192.168.1.29", 8080, "", function (err)
+updater.check("192.168.1.17", 8080, "", function (err)
     print(pformat("Update result: %s", err))
     unrequire("updater")
     --file.remove("fw-etag.txt")
