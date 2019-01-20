@@ -1,51 +1,42 @@
 print("Waiting. Set main to nil to stop")
 local siteconfig
+local deviceconfig
+local Event
 
-local function updated()
-    print("begin")
-    local deviceconfig = require("device-config")
-    print("device name", deviceconfig.NAME)
-end
+BootEvents = {}
 
 local function wifiMain(info)
     print("Wifi Connected: " .. info.ip)
     --startTelnet = require("telnetserver")
     --startTelnet(config.TELNET_PORT, config.TELNET_MOTD)
-    local updater = require("updater")
-    print("Checking for updates...")
-    updater.check(
-        siteconfig.UPDATE_HOST,
-        siteconfig.UPDATE_PORT,
-        "",
-        function(result)
-            if type(result) == "string" then
-                print("Error updating device:", result)
-            else
-                if result > 0 then
-                    print(string.format("%d files updated. Restarting in 5 seconds...", result))
-                    tmr.create():alarm(
-                        5000,
-                        tmr.ALARM_SINGLE,
-                        function()
-                            node.restart()
-                        end
-                    )
-                    return
-                else
-                    print("no updates found")
-                end
-            end
-            updated()
-        end
-    )
 end
 
 function main()
     require("polyfill")
-     --
+    Event = require("event")
+    BootEvents.main = Event:new()
+
     siteconfig = require("site-config")
+    deviceconfig = require("device-config")
+
+    if siteconfig.MODULES then
+        for _, moduleName in ipairs(siteconfig.MODULES) do
+            require(moduleName)
+        end
+    end
+
+    if deviceconfig.MODULES then
+        for _, moduleName in ipairs(deviceconfig.MODULES) do
+            require(moduleName)
+        end
+    end
+
+    BootEvents.main:fire()
+    BootEvents.main = nil
+
     local wifiManager = require("wifimanager")
-    wifiManager.startWifi(siteconfig.WIFI_SSID, siteconfig.WIFI_PASSWORD, wifiMain)
+    wifiManager.OnConnect:listen(wifiMain)
+    wifiManager.start(siteconfig.WIFI_SSID, siteconfig.WIFI_PASSWORD)
 end
 
 tmr.create():alarm(
