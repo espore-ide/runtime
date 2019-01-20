@@ -1,7 +1,18 @@
 local Updater = {}
 local pformat = require("pformat")
 
-function parseJSON(data)
+Updater.ignoreList={}
+local etagFile = "fw-etag.txt"
+local fmFile="fw-files.json"
+
+Updater.ignore = function(fileName)
+    Updater.ignoreList[fileName]=true
+end
+
+Updater.ignore(etagFile)
+Updater.ignore(fmFile)
+
+local function parseJSON(data)
     local ok, obj = pcall(sjson.decode,data)
     if not ok then
         obj=nil
@@ -9,24 +20,34 @@ function parseJSON(data)
     return obj
 end
 
-function readJSON(fileName)
-    if file.open(fileName,"r") then
-        local data=file.read()
-        file.close()
-        return parseJSON(data)
+local function readJSON(fileName)
+    local f = file.open(fileName,"r") 
+    if not f then
+        return nil
     end
+    local data=""
+    while true do
+        local chunk = f:read()
+        if chunk ~= nil then
+            data = data .. chunk
+        else
+            break
+        end
+    end
+    f:close()
+    return parseJSON(data)
 end
 
-function writeJSON(fileName, obj)
-    if file.open(fileName, "w") then
+local function writeJSON(fileName, obj)
+    local f = file.open(fileName, "w")
+    if f then
         local data = sjson.encode(obj)
-        file.write(data)
-        file.close()
+        f:write(data)
+        f:close()
     end
 end
 
-local etagFile = "fw-etag.txt"
-function readEtag()
+local function readEtag()
    local fetag = file.open(etagFile,"r")
    local etag=""
     if fetag then
@@ -36,7 +57,7 @@ function readEtag()
     return etag
 end
 
-function writeEtag(etag)
+local function writeEtag(etag)
     local fetag=file.open(etagFile,"w")
     if fetag then
         fetag:write(etag)
@@ -44,53 +65,23 @@ function writeEtag(etag)
     end
 end
 
+local function toLocalFile(fileName)
+    local localFile
+    _, localFile=fileName:match("(.*/)(.*)")
+    return localFile
+end
+
 Updater.check = function(host, port, basePath, callback)
     local fm
-    local fmFile="fw-files.json"
     local etag = readEtag()
     local url=string.format("http://%s:%d%s/%s.json",host,port,basePath, node.chipid())
     local headers = {
         ["If-None-Match"] = etag
     }
-    http.get(url,{headers=headers}, function (code, body, headers)
-            if code == 304 then
-                callback()
-            else
-                if code == 200 then
-                    etag = headers["etag"]
-                    fm = parseJSON(body)
-                    body=nil
-                    local lfm = readJSON(fmFile)
-                    if lfm == nil or not lfm.files then
-                        lfm = {files={}}
-                    end
-                    if not fm.files then
-                        callback("Incorrect format")
-                        return
-                    end
-                    local dlist = {}
-                    for file,hash in pairs(fm.files) do
-                        if hash ~= lfm.files[file] then
-                            dlist[#dlist+1]={file=file, hash=hash}
-                        end
-                    end
-                    lfm=nil
-                    downloadUpdates(dlist)
-                   
-                else
-                    callback("Error downloading fw")
-                end
-            end
-        end)
-
-    function downloadUpdates(dlist)
-        for j,e in pairs(dlist) do
-            print(j,e)
-        end
- 
+    local function downloadUpdates(dlist)
         local i=1
         local Downloader = require("downloader")
-        function cancel(err)
+        local function cancel(err)
             for _, entry in ipairs(dlist) do
                 if entry.tmpfile ~=nil then
                     file.remove(entry.tmpfile)
@@ -98,23 +89,33 @@ Updater.check = function(host, port, basePath, callback)
             end
             callback(err)
         end
-        function finishOff()
+        local function finishOff()
             for _, entry in ipairs(dlist) do
                 file.remove(entry.localfile)
                 file.rename(entry.tmpfile, entry.localfile)
             end
             writeEtag(etag)
             writeJSON(fmFile, fm)
-            callback()   
+            local list = file.list()
+            for fileName, _ in pairs(fm.files) do
+                list[toLocalFile(fileName)]=nil
+            end
+            for fileName, _ in pairs(Updater.ignoreList) do
+                list[fileName]=nil
+            end
+            for fileName, _ in pairs(list) do
+                file.remove(fileName)
+            end
+            callback(#dlist)   
         end
-        function processNext()
+        local function processNext()
             if i == #dlist+1 then
                 finishOff()
                 return
             end
-            entry=dlist[i]
+            local entry=dlist[i]
             i=i+1
-            _, entry.localfile=entry.file:match("(.*/)(.*)")
+            entry.localfile=toLocalFile(entry.file)
             entry.tmpfile=pformat("tmp-%s",entry.localfile)
             Downloader.download(host, port, basePath .. entry.file, entry.tmpfile, function (err, size, hash)
                 if err ~= nil then
@@ -131,6 +132,35 @@ Updater.check = function(host, port, basePath, callback)
 
         processNext()
     end
+    http.get(url,{headers=headers}, function (code, body, headers)
+        if code == 304 then
+            callback(0)
+        else
+            if code == 200 then
+                etag = headers["etag"]
+                fm = parseJSON(body)
+                body=nil
+                if fm == nil or not fm.files then
+                    callback("Incorrect json firmware format")
+                    return
+                end
+                local lfm = readJSON(fmFile)
+                if lfm == nil or not lfm.files then
+                    lfm = {files={}}
+                end
+                local dlist = {}
+                for file,hash in pairs(fm.files) do
+                    if hash ~= lfm.files[file] then
+                        dlist[#dlist+1]={file=file, hash=hash}
+                    end
+                end
+                lfm=nil
+                downloadUpdates(dlist)
+            else
+                callback(pformat("Error downloading fw: %d", code))
+            end
+        end
+    end)
 end
 
 return Updater

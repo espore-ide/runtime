@@ -1,5 +1,5 @@
-Downloader = {}
-pformat = require("pformat")
+local Downloader = {}
+local pformat = require("pformat")
 
 Downloader.download = function(host, port, path, dstFile, callback)
     local conn=net.createConnection(net.TCP, 0)
@@ -15,16 +15,14 @@ Downloader.download = function(host, port, path, dstFile, callback)
         f:write(data)
         hasher:update(data)
         written = written + #data
-        print(written)
     end
 
     local finish = function(err, length)
         local hash
         if f ~= nil then
-            print("closed " .. dstFile)
             f:close()
             hash=hasher:finalize()
-            hash=crypto.toHex(hash)
+            hash=encoder.toHex(hash)
             f=nil
             hasher=nil
         end
@@ -39,11 +37,10 @@ Downloader.download = function(host, port, path, dstFile, callback)
     end
     
     conn:on("connection",function(conn)
-        print(pformat("Path=%s, dstFile=%s", path, dstFile))
-            connected=true
-            conn:send(pformat("GET /%s HTTP/1.1\r\n" .. 
-                    "Host: %s:%d\r\n"..
-                    "Accept: */*\r\n\r\n", path, host, port)) 
+        connected=true
+        conn:send(pformat("GET %s HTTP/1.1\r\n" .. 
+                "Host: %s:%d\r\n"..
+                "Accept: */*\r\n\r\n", path, host, port)) 
         end)
 
     local content=""
