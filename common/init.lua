@@ -14,19 +14,21 @@ end
 function main()
     require("polyfill")
     Event = require("event")
+    local json = require("json")
     BootEvents.main = Event:new()
 
-    siteconfig = require("site-config")
-    deviceconfig = require("device-config")
-
-    if siteconfig.MODULES then
-        for _, moduleName in ipairs(siteconfig.MODULES) do
+    local firmware = json.read("firmware.json")
+    if firmware and firmware.modules then
+        for _, moduleName in ipairs(firmware.modules) do
+            print("loading", moduleName)
             require(moduleName)
         end
     end
 
-    if deviceconfig.MODULES then
-        for _, moduleName in ipairs(deviceconfig.MODULES) do
+    local siteconfig = json.read("site-config.json")
+    if siteconfig and siteconfig.modules then
+        for _, moduleName in ipairs(siteconfig.modules) do
+            print("loading", moduleName)
             require(moduleName)
         end
     end
@@ -35,8 +37,7 @@ function main()
     BootEvents.main = nil
 
     local wifiManager = require("wifimanager")
-    wifiManager.OnConnect:listen(wifiMain)
-    wifiManager.start(siteconfig.WIFI_SSID, siteconfig.WIFI_PASSWORD)
+    wifiManager.start()
 end
 
 tmr.create():alarm(

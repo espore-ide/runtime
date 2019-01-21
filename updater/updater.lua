@@ -1,13 +1,17 @@
 local Updater = {}
 local pformat = require("stringutil").pformat
 local json = require("json")
+local datafiles = require("datafiles")
 
-Updater.ignoreList = {}
+local CONFIG_FILE = "updater-config.json"
 local etagFile = "fw-etag.txt"
 local fmFile = "fw-files.json"
 
-Updater.ignore = function(fileName)
-    Updater.ignoreList[fileName] = true
+datafiles.add(CONFIG_FILE, etagFile, fmFile)
+
+local config = json.read(CONFIG_FILE)
+if config == nil then
+    error("Cannot read " .. CONFIG_FILE)
 end
 
 function Updater.unrequire(packageName)
@@ -24,9 +28,6 @@ function Updater.unloadAll()
         Updater.unrequire(packageName)
     end
 end
-
-Updater.ignore(etagFile)
-Updater.ignore(fmFile)
 
 local function readEtag()
     local fetag = file.open(etagFile, "r")
@@ -52,10 +53,10 @@ local function toLocalFile(fileName)
     return localFile
 end
 
-Updater.check = function(host, port, basePath, callback)
+Updater.check = function(callback)
     local fm
     local etag = readEtag()
-    local url = string.format("http://%s:%d%s/%s.json", host, port, basePath, node.chipid())
+    local url = string.format("http://%s:%d%s/%s.json", config.host, config.port, config.basePath, node.chipid())
     local headers = {
         ["If-None-Match"] = etag
     }
@@ -81,7 +82,7 @@ Updater.check = function(host, port, basePath, callback)
             for fileName, _ in pairs(fm.files) do
                 list[toLocalFile(fileName)] = nil
             end
-            for fileName, _ in pairs(Updater.ignoreList) do
+            for _, fileName in ipairs(datafiles) do
                 list[fileName] = nil
             end
             for fileName, _ in pairs(list) do
@@ -99,9 +100,9 @@ Updater.check = function(host, port, basePath, callback)
             entry.localfile = toLocalFile(entry.file)
             entry.tmpfile = pformat("tmp-%s", entry.localfile)
             Downloader.download(
-                host,
-                port,
-                basePath .. entry.file,
+                config.host,
+                config.port,
+                config.basePath .. entry.file,
                 entry.tmpfile,
                 function(err, size, hash)
                     if err ~= nil then

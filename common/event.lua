@@ -27,8 +27,9 @@ function Event:fire(...)
 end
 
 function Event:getTrigger()
+    local this = self
     return function(...)
-        self:fire(...)
+        this:fire(...)
     end
 end
 

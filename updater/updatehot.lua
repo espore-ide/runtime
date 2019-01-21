@@ -4,9 +4,6 @@ local siteconfig = require("site-config")
 print("Checking for updates...")
 
 updater.check(
-    siteconfig.UPDATE_HOST,
-    siteconfig.UPDATE_PORT,
-    "",
     function(result)
         if type(result) == "string" then
             print("Error updating device:", result)

@@ -16,12 +16,8 @@ local function updateonboot(info, reconnect)
         return
     end
 
-    local siteconfig = require("site-config")
     log("Checking for updates...")
     updater.check(
-        siteconfig.UPDATE_HOST,
-        siteconfig.UPDATE_PORT,
-        "",
         function(result)
             local pformat = require("stringutil").pformat
             local err

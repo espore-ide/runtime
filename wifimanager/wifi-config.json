@@ -1,0 +1,14 @@
+{
+    "networks": [
+        {
+            "ssid": "xxx",
+            "pwd": "yyy",
+            "auto": true
+        }
+    ],
+    "flock": {
+        "ssid": "homenode",
+        "pwd": "home1234",
+        "auto": true
+    }
+}
