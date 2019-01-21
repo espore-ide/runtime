@@ -9,9 +9,7 @@ local WIFI_LAST = "wifi-last.json"
 
 datafiles.add(WIFI_CONFIG_FILE, WIFI_LAST)
 
-local function log(msg)
-    print("WIFI MANAGER:", msg)
-end
+local log = require("log"):new("wifimanager")
 
 local networks
 local currentNetwork = 0
@@ -53,7 +51,7 @@ local function connectNext()
     end
     local cfg = networks[currentNetwork]
 
-    log("trying to connect to " .. cfg.ssid)
+    log:info("trying to connect to " .. cfg.ssid)
     wifi.sta.config(cfg)
     wifi.sta.connect()
 end
@@ -70,7 +68,6 @@ WifiManager.start = function()
     local last = json.read(WIFI_LAST)
     if last ~= nil then
         for i, cfg in ipairs(networks) do
-            print(cfg.ssid, last.ssid)
             if cfg.ssid == last.ssid then
                 table.remove(networks, i)
                 break
@@ -80,7 +77,7 @@ WifiManager.start = function()
     end
     WifiManager.OnAPDisconnect:listen(
         function()
-            log("AP disconnected")
+            log:warning("AP disconnected")
             connectNext()
         end
     )

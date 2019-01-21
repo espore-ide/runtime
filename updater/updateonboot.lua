@@ -3,9 +3,7 @@ local Event = require("event")
 local WifiManager = require("wifimanager")
 M.OnUpdate = Event:new()
 
-local function log(msg)
-    print("UPDATE ON BOOT:", msg)
-end
+local log = require("log"):new("updateonboot")
 
 local function updateonboot(info, reconnect)
     WifiManager.OnConnect:unlisten(updateonboot)
@@ -16,17 +14,17 @@ local function updateonboot(info, reconnect)
         return
     end
 
-    log("Checking for updates...")
+    log:info("Checking for updates...")
     updater.check(
         function(result)
             local pformat = require("stringutil").pformat
             local err
             if type(result) == "string" then
                 err = pformat("Error updating device: %s", result)
-                log(err)
+                log:error(err)
             else
                 if result > 0 then
-                    log(pformat("%d files updated. Restarting in 5 seconds...", result))
+                    log:info("%d files updated. Restarting in 5 seconds...", result)
                     tmr.create():alarm(
                         5000,
                         tmr.ALARM_SINGLE,
@@ -35,7 +33,7 @@ local function updateonboot(info, reconnect)
                         end
                     )
                 else
-                    log("No updates found")
+                    log:info("No updates found")
                 end
                 err = nil
             end
