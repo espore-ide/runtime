@@ -87,4 +87,11 @@ WifiManager.start = function()
 
     connectNext()
 end
+tmr.create():alarm(
+    100,
+    tmr.ALARM_SINGLE,
+    function()
+        WifiManager.start()
+    end
+)
 return WifiManager
