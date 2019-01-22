@@ -52,6 +52,7 @@ Downloader.download = function(host, port, path, dstFile, callback)
         function(conn, data)
             if not headerReceived then
                 content = content .. data
+                collectgarbage()
                 local i, j = string.find(content, "\r\n\r\n")
                 if i ~= nil then
                     local header = string.sub(content, 1, i - 1)

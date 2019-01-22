@@ -1,11 +1,20 @@
 ESP8266 = true
-wifi.mode = wifi.setmode
+
+local wifi_ = wifi
+wifi={}
+wifi.mode = wifi_.setmode
+wifi.STATION = wifi_.STATION
+wifi.sta={}
+for k, v in pairs(wifi_.sta) do
+    wifi.sta[k]=v
+end
 wifi.start = function()
 end
 
 local connected_cb, disconnected_cb, got_ip_cb
 
 wifi.sta.on = function(evt, callback)
+    print("setting cb ", evt)
     if evt == "connected" then
         connected_cb = callback
     else
@@ -24,18 +33,19 @@ end
 wifi.sta.config_ = wifi.sta.config
 
 wifi.sta.config = function(cfg)
-    local config
+    local config={}
     for k, v in pairs(cfg) do
         config[k] = v
     end
-    config.connected_cb = connected_cb
-    config.disconnected_cb = disconnected_cb
+    config.connect_cb = connected_cb
+    config.disconnect_cb = disconnected_cb
     config.got_ip_cb = got_ip_cb
 
     return wifi.sta.config_(config)
 end
 
-http._get = http.get
+local http_= http
+http={}
 http.get = function(url, options, callback)
     local headers = ""
     if options and options.headers then
@@ -43,5 +53,5 @@ http.get = function(url, options, callback)
             headers = headers .. string.format("%s: %s\r\n", h, v)
         end
     end
-    return http._get(url, headers, callback)
+    return http_.get(url, headers, callback)
 end
