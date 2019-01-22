@@ -1,5 +1,4 @@
 local updater = require("updater")
-local siteconfig = require("site-config")
 
 print("Checking for updates...")
 

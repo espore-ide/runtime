@@ -1,13 +1,12 @@
 print("Waiting. Set main to nil to stop")
 
 function main()
-    print("main")
     pcall(node.flashindex("_init"))
-    print("pcalled")
+    local log = require("log"):new("init")
+    log:info("starting up")
     require("polyfill")
     local Event = require("event")
     local json = require("json")
-    local log = require("log"):new("init")
 
     local function loadModules(modules)
         if not modules then
