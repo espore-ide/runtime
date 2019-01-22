@@ -19,7 +19,7 @@ end
 
 local function testdownloadfile()
     print ("testdownloadfile", count)
-    http.get("http://192.168.43.224:8080/0x2d30aea40329.json", function(code, body, headers)
+    http.get("http://192.168.0.181:8080/1503009.json", {},function(code, body, headers)
         print(code)
         tmr.create():alarm(100, tmr.ALARM_SINGLE, finish)
     end)
@@ -42,7 +42,7 @@ local function test304()
 end
 
 
-test = test304
+test = testdownloadfile
 
 test()
 

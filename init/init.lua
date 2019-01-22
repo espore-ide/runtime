@@ -1,6 +1,9 @@
 print("Waiting. Set main to nil to stop")
 
 function main()
+    print("main")
+    pcall(node.flashindex("_init"))
+    print("pcalled")
     require("polyfill")
     local Event = require("event")
     local json = require("json")
