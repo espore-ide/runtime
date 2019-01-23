@@ -96,7 +96,7 @@ Updater.check = function(callback)
                 print("Found image file. Flashing...")
                 local err = node.flashreload(img) --won't return if successful
                 if err then
-                    error("Error flashing: " .. err)
+                    callback("Error flashing: " .. err)
                 end
             end
             callback(#dlist)

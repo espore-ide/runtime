@@ -20,7 +20,7 @@ function main()
 
     OnLoad = Event:new()
 
-    local firmware = json.read("firmware.json")
+    firmware = json.read("firmware.json")
     if firmware then
         loadModules(firmware.modules)
     end
