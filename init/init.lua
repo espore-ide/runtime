@@ -1,7 +1,9 @@
 print("Waiting. Set main to nil to stop")
 
 function main()
-    pcall(node.flashindex("_init"))
+    if node.flashindex then
+        pcall(node.flashindex("_init"))
+    end
     local log = require("log"):new("init")
     log:info("starting up")
     require("polyfill")

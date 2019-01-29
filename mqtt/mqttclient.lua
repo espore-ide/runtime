@@ -24,12 +24,7 @@ function MClient:new(basePath, clientId, host, port, onConnect)
     local connectionFailed
     local connect = function()
         print("Connecting to MQTT ...")
-        o.m:connect(host, port, 0, connected, connectionFailed)
-    end
-    connectionFailed = function(client, reason)
-        o.connected = false
-        print("Connection to MQTT failed. Reason: " .. reason)
-        tmr.create():alarm(5 * 1000, tmr.ALARM_SINGLE, connect)
+        o.m:connect(host, port, 0)
     end
     local processMessage = function(client, topicName, data)
         topic = o.topics[topicName]
@@ -39,12 +34,13 @@ function MClient:new(basePath, clientId, host, port, onConnect)
         end
         print("Warning: unrecognized topic " .. topicName)
     end
+    o.m:on("connect", connected)
     o.m:on(
         "offline",
         function()
             print("Disconnected from MQTT.")
             o.connected = false
-            connect()
+            tmr.create():alarm(5 * 1000, tmr.ALARM_SINGLE, connect)
         end
     )
 
