@@ -64,3 +64,17 @@ function createClient()
       a=nil
     end)
 end
+
+
+m = mqtt.Client("esp32", 120)
+m:connect("192.168.1.34", 1883, 0, function(client)
+  print("connected, schedule topic subscriptions")
+  client:subscribe("topic1", 0,
+    function (client)
+      client:subscribe("topic2", 0, function () print("subscriptions done") end)
+    end)
+end,
+function(client, reason)
+  print("failed reason: " .. reason)
+end)
+
