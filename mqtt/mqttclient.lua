@@ -1,4 +1,5 @@
 MClient = {}
+local log = require("log"):new("mqtt-client")
 
 function MClient:new(basePath, clientId, host, port, onConnect)
     local o = {}
@@ -8,8 +9,9 @@ function MClient:new(basePath, clientId, host, port, onConnect)
     o.base = basePath .. "/" .. clientId .. "/"
     o.topics = {}
     o.reconnect = false
+    local disconnected
     local connected = function()
-        print("Connection to MQTT established. Base: " .. o.base)
+        log:info("Connection to MQTT established. Base: " .. o.base)
         o.connected = true
         if #o.topics > 0 then
             local topics = {}
@@ -23,27 +25,29 @@ function MClient:new(basePath, clientId, host, port, onConnect)
     end
     local connectionFailed
     local connect = function()
-        print("Connecting to MQTT ...")
-        o.m:connect(host, port, 0)
+        log:info("Connecting to MQTT ...")
+        if ESP8266 then
+            o.m:connect(host, port, 0, 0, connected, disconnected)
+        else
+            o.m:connect(host, port, 0, 0, connected)
+        end
     end
+    disconnected = function()
+        log:warning("Disconnected from MQTT.")
+        o.connected = false
+        tmr.create():alarm(5 * 1000, tmr.ALARM_SINGLE, connect)
+    end
+
     local processMessage = function(client, topicName, data)
         topic = o.topics[topicName]
         if topic ~= nil and topic.onMessage ~= nil then
             topic.onMessage(data)
             return
         end
-        print("Warning: unrecognized topic " .. topicName)
+        log:warning("unrecognized topic " .. topicName)
     end
     o.m:on("connect", connected)
-    o.m:on(
-        "offline",
-        function()
-            print("Disconnected from MQTT.")
-            o.connected = false
-            tmr.create():alarm(5 * 1000, tmr.ALARM_SINGLE, connect)
-        end
-    )
-
+    o.m:on("offline", disconnected)
     o.m:on("message", processMessage)
     connect()
     return o

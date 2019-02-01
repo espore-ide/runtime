@@ -1,6 +1,6 @@
 local json = require("json")
 local MClient = require("mqttclient")
-local log = require("log"):new("mqtt")
+local log = require("log"):new("mqtt-service")
 local Event = require("event")
 
 local config = json.read("mqtt-config.json")
