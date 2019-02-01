@@ -76,9 +76,6 @@ Updater.check = function(callback)
             for _, entry in ipairs(dlist) do
                 file.remove(entry.localfile)
                 file.rename(entry.tmpfile, entry.localfile)
-                if entry.localfile:match(".*%.(.*)") == "img" then
-                    img = entry.localfile
-                end
             end
             writeEtag(etag)
             json.write(fmFile, fm)
@@ -91,13 +88,6 @@ Updater.check = function(callback)
             end
             for fileName, _ in pairs(list) do
                 file.remove(fileName)
-            end
-            if img then
-                print("Found image file. Flashing...")
-                local err = node.flashreload(img) --won't return if successful
-                if err then
-                    callback("Error flashing: " .. err)
-                end
             end
             callback(#dlist)
         end

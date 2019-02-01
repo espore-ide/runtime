@@ -2,6 +2,14 @@ print("Waiting. Set main to nil to stop")
 
 function main()
     if node.flashindex then
+        local lfsFile = node.chipid() .. "-lfs.img"
+        if file.exists(lfsFile) then
+            print("Found LFS image. Flashing " .. lfsFile .. " ...")
+            file.remove("lfs.img")
+            file.rename(lfsFile, "lfs.img")
+            local err = node.flashreload("lfs.img")
+            print("Error flashing LFS image: " .. err)
+        end
         pcall(node.flashindex("_init"))
     end
     local log = require("log"):new("init")
