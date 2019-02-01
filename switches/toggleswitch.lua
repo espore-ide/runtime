@@ -1,22 +1,28 @@
 ToggleSwitch = {}
 
 function ToggleSwitch:new(dInput)
-    local o = {state="OFF"}
+    local o = {state = "OFF"}
     setmetatable(o, self)
     self.__index = self
     dInput.callback = function(pinState)
         if pinState == gpio.LOW then
-            if o.state=="ON" then
-                o.state="OFF"
+            local newState
+            if o.state == "ON" then
+                newState = "OFF"
             else
-                o.state="ON"
+                newState = "ON"
             end
-            if o.callback ~= nil then
-                o.callback(o)
-            end
+            o:set(newState)
         end
     end
     return o
+end
+
+function ToggleSwitch:set(state)
+    self.state = state
+    if self.callback ~= nil then
+        self.callback(self)
+    end
 end
 
 return ToggleSwitch

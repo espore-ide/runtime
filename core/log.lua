@@ -1,7 +1,7 @@
 local Log = {}
 local su = require("stringutil")
 local pformat = su.pformat
-local pack = su.pack
+local cleanpack = su.cleanpack
 
 function Log:new(name)
     local o = {}
@@ -16,22 +16,22 @@ function Log:print(level, f, args)
 end
 
 function Log:error(f, ...)
-    local args = pack(...)
+    local args = cleanpack(...)
     self:print("ERROR", f, args)
 end
 
 function Log:warning(f, ...)
-    local args = pack(...)
+    local args = cleanpack(...)
     self:print("WARNING", f, args)
 end
 
 function Log:info(f, ...)
-    local args = pack(...)
+    local args = cleanpack(...)
     self:print("INFO", f, args)
 end
 
 function Log:debug(f, ...)
-    local args = pack(...)
+    local args = cleanpack(...)
     self:print("DEBUG", f, args)
 end
 

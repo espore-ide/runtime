@@ -13,13 +13,7 @@ function MClient:new(basePath, clientId, host, port, onConnect)
     local connected = function()
         log:info("Connection to MQTT established. Base: " .. o.base)
         o.connected = true
-        if #o.topics > 0 then
-            local topics = {}
-            for topicName, topic in pairs(o.topics) do
-                topics[topicName] = topic.qos or 0
-            end
-            o.m:subscribe(topics)
-        end
+        o.topics = {}
         onConnect(o.reconnect)
         o.reconnect = true
     end
