@@ -1,9 +1,10 @@
 local Debounced = {}
 
-function Debounced:new(pin, bounce)
+function Debounced:new(pin, bounce, callback)
     local o = {}
     setmetatable(o, self)
     self.__index = self
+    o.callback = callback
     o.timer = tmr.create()
     o.timer:register(
         bounce,
