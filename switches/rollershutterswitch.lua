@@ -1,8 +1,8 @@
 RSS = {}
 
-RSS.STATUS_IDLE = "IDLE"
-RSS.STATUS_UP = "UP"
-RSS.STATUS_DOWN = "DOWN"
+RSS.STATUS_IDLE = 0
+RSS.STATUS_UP = 1
+RSS.STATUS_DOWN = 2
 
 function RSS:new(upTime, downTime, callback)
     local o = {}
