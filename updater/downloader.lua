@@ -7,6 +7,9 @@ Downloader.download = function(host, port, path, dstFile, callback)
     local hasher
     local f
     local written = 0
+    local watchdogWritten = 0
+    local watchdogTimer = tmr.create()
+
     local write = function(data)
         if f == nil then
             f = file.open(dstFile, "w")
@@ -18,6 +21,10 @@ Downloader.download = function(host, port, path, dstFile, callback)
     end
 
     local finish = function(err, length)
+        watchdogTimer:stop()
+        watchdogTimer:unregister()
+        watchdogTimer = nil
+
         local hash
         if f ~= nil then
             f:close()
@@ -35,6 +42,17 @@ Downloader.download = function(host, port, path, dstFile, callback)
             callback(err, length, hash)
         end
     end
+
+    watchdogTimer:alarm(
+        1000,
+        tmr.ALARM_AUTO,
+        function()
+            if watchdogWritten == written then
+                finish("Download timeout", 0)
+            end
+            watchdogWritten = written
+        end
+    )
 
     conn:on(
         "connection",
@@ -88,9 +106,11 @@ Downloader.download = function(host, port, path, dstFile, callback)
 
     conn:on(
         "disconnection",
-        function(x, e)
+        function(x, err)
             connected = false
-            finish(e, nil)
+            if err ~= 0 then
+                finish(e, nil)
+            end
         end
     )
 
