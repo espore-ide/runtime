@@ -130,6 +130,9 @@ Updater.check = function(callback)
             else
                 if code == 200 then
                     etag = headers["etag"]
+                    if etag == nil then
+                        callback("Update server did not send etag header")
+                    end
                     fm = json.parse(body)
                     body = nil
                     if fm == nil or not fm.files then
