@@ -1,7 +1,9 @@
+-- import: core
 local Downloader = {}
-local pformat = require("stringutil").pformat
+local pformat = require("core.stringutil").pformat
 
-Downloader.download = function(host, port, path, dstFile, callback)
+Downloader.timeout = 1000
+Downloader.download = function(host, port, path, dstFile, etag, callback)
     local conn = net.createConnection(net.TCP, 0)
     local connected = false
     local hasher
@@ -39,12 +41,12 @@ Downloader.download = function(host, port, path, dstFile, callback)
                 connected = false
             end
             conn = nil
-            callback(err, length, hash)
+            callback(err, length, hash, etag)
         end
     end
 
     watchdogTimer:alarm(
-        1000,
+        Downloader.timeout,
         tmr.ALARM_AUTO,
         function()
             if watchdogWritten == written then
@@ -58,7 +60,11 @@ Downloader.download = function(host, port, path, dstFile, callback)
         "connection",
         function(conn)
             connected = true
-            conn:send(pformat("GET %s HTTP/1.1\r\n" .. "Host: %s:%d\r\n" .. "Accept: */*\r\n\r\n", path, host, port))
+            local inm = ""
+            if etag ~= nil then
+                inm = pformat("If-None-Match: %s\r\n", etag)
+            end
+            conn:send(pformat("GET %s HTTP/1.1\r\nHost: %s:%d\r\n%sAccept: */*\r\n\r\n", path, host, port, inm))
         end
     )
 
@@ -77,7 +83,7 @@ Downloader.download = function(host, port, path, dstFile, callback)
                     content = string.sub(content, j + 1)
                     local status = tonumber(string.match(header, "^HTTP/%d.%d (%d+) .-\r\n"))
                     if status ~= 200 then
-                        finish("Error " .. status)
+                        finish(status)
                         return
                     end
                     contentLength = tonumber(string.match(header, "Content--Length: (%d+)\r\n"))
@@ -85,6 +91,7 @@ Downloader.download = function(host, port, path, dstFile, callback)
                         finish("Missing Content-Length header")
                         return
                     end
+                    etag = string.match(header, "ETag:%s(.*)%s*\r\n")
                     headerReceived = true
                     write(content)
                     content = nil
