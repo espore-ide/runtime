@@ -35,4 +35,19 @@ function M.write(fileName, obj)
     end
 end
 
+function M.merge(a, b)
+    for k, v in pairs(b) do
+        if type(v) == "table" then
+            if type(a[k] or false) == "table" then
+                M.merge(a[k] or {}, b[k] or {})
+            else
+                a[k] = v
+            end
+        else
+            a[k] = v
+        end
+    end
+    return a
+end
+
 return M

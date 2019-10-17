@@ -1,5 +1,5 @@
 local Log = {}
-local su = require("stringutil")
+local su = require("core.stringutil")
 local pformat = su.pformat
 local cleanpack = su.cleanpack
 
