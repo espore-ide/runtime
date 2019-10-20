@@ -33,7 +33,15 @@ local function updateonboot(info, reconnect)
                         end
                     )
                 else
-                    log:info("No updates found")
+                    if result == updater.RESULT_NO_UPDATES then
+                        log:info("No updates found")
+                        if __FIRMWARE_ACCEPT == false then
+                            __FIRMWARE_ACCEPT = true
+                            log:info("Accepting firmware")
+                        end
+                    else
+                        log:error("Error checking for updates: %s", result)
+                    end
                 end
                 err = nil
             end

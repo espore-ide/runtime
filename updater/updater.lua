@@ -1,17 +1,16 @@
+-- datafile: updater-etag.json
+-- datafile: fw-files.json
+
 local Updater = {}
-local pformat = require("stringutil").pformat
-local json = require("json")
-local datafiles = require("datafiles")
+local pformat = require("core.stringutil").pformat
+local json = require("core.json")
 
 local CONFIG_FILE = "updater-config.json"
-local etagFile = "fw-etag.txt"
-local fmFile = "fw-files.json"
-
-datafiles.add(CONFIG_FILE, etagFile, fmFile)
+local etagFile = "updater-etag.json"
 
 local config = json.read(CONFIG_FILE)
 if config == nil then
-    error("Cannot read " .. CONFIG_FILE)
+    error("Updater: Cannot read " .. CONFIG_FILE)
 end
 
 function Updater.unrequire(packageName)
@@ -30,131 +29,40 @@ function Updater.unloadAll()
 end
 
 local function readEtag()
-    local fetag = file.open(etagFile, "r")
-    local etag = ""
-    if fetag then
-        etag = fetag:readline()
-        fetag:close()
-    end
-    return etag
+    jetag = json.read(etagFile) or {ETag = ""}
+    return jetag.ETag or ""
 end
 
 local function writeEtag(etag)
-    local fetag = file.open(etagFile, "w")
-    if fetag then
-        fetag:write(etag)
-        fetag:close()
-    end
+    json.write(etagFile, {ETag = etag})
 end
 
-local function toLocalFile(fileName)
-    local localFile
-    _, localFile = fileName:match("(.*/)(.*)")
-    return localFile
-end
+Updater.RESULT_NO_UPDATES = 0
+Updater.RESULT_NEW_IMAGE = 1
 
 Updater.check = function(callback)
     local fm
     local etag = readEtag()
-    local url = string.format("http://%s:%d%s/%s.json", config.host, config.port, config.basePath, node.chipid())
-    local headers = {
-        ["If-None-Match"] = etag
-    }
-    local function downloadUpdates(dlist)
-        local i = 1
-        local Downloader = require("downloader")
-        local function cancel(err)
-            for _, entry in ipairs(dlist) do
-                if entry.tmpfile ~= nil then
-                    file.remove(entry.tmpfile)
-                end
-            end
-            callback(err)
-        end
-        local function finishOff()
-            local img
-            for _, entry in ipairs(dlist) do
-                file.remove(entry.localfile)
-                file.rename(entry.tmpfile, entry.localfile)
-            end
-            writeEtag(etag)
-            json.write(fmFile, fm)
-            local list = file.list()
-            for fileName, _ in pairs(fm.files) do
-                list[toLocalFile(fileName)] = nil
-            end
-            for _, fileName in ipairs(datafiles) do
-                list[fileName] = nil
-            end
-            for fileName, _ in pairs(list) do
-                file.remove(fileName)
-            end
-            callback(#dlist)
-        end
-        local function processNext()
-            if i == #dlist + 1 then
-                finishOff()
+    local url = string.format("http://%s:%d%s/%s.img", config.host, config.port, config.basePath, node.chipid())
+    local downloader = require("updater.downloader")
+    local imgFile = pformat("%s.img", node.chipid())
+    downloader.download(
+        config.host,
+        config.port,
+        config.basePath .. imgFile,
+        "update.img",
+        etag,
+        function(err, length, hash, newEtag)
+            if err == 304 then
+                callback(Updater.RESULT_NO_UPDATES)
                 return
             end
-            local entry = dlist[i]
-            i = i + 1
-            entry.localfile = toLocalFile(entry.file)
-            entry.tmpfile = pformat("tmp-%s", entry.localfile)
-            Downloader.download(
-                config.host,
-                config.port,
-                config.basePath .. entry.file,
-                entry.tmpfile,
-                function(err, size, hash)
-                    if err ~= nil then
-                        cancel(pformat("Error downloading %s: %s", entry.file, err))
-                        return
-                    end
-                    if hash ~= entry.hash then
-                        cancel(pformat("Hash mismatch in %s. Expected %s, got %s", entry.file, entry.hash, hash))
-                        return
-                    end
-                    processNext()
-                end
-            )
-        end
-
-        processNext()
-    end
-    http.get(
-        url,
-        {headers = headers},
-        function(code, body, headers)
-            if code == 304 then
-                callback(0)
-            else
-                if code == 200 then
-                    etag = headers["etag"]
-                    if etag == nil then
-                        callback("Update server did not send etag header")
-                    end
-                    fm = json.parse(body)
-                    body = nil
-                    if fm == nil or not fm.files then
-                        callback("Incorrect json firmware format")
-                        return
-                    end
-                    local lfm = json.read(fmFile)
-                    if lfm == nil or not lfm.files then
-                        lfm = {files = {}}
-                    end
-                    local dlist = {}
-                    for file, hash in pairs(fm.files) do
-                        if hash ~= lfm.files[file] then
-                            dlist[#dlist + 1] = {file = file, hash = hash}
-                        end
-                    end
-                    lfm = nil
-                    downloadUpdates(dlist)
-                else
-                    callback(pformat("Error downloading fw: %d", code))
-                end
+            if err ~= nil then
+                callback(err)
+                return
             end
+            writeEtag(newEtag)
+            callback(Updater.RESULT_NEW_IMAGE)
         end
     )
 end

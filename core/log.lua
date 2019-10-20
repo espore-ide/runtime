@@ -12,7 +12,7 @@ function Log:new(name)
 end
 
 function Log:print(level, f, args)
-    print(pformat("[" .. level .. "] (" .. self.name .. ") " .. f, unpack(args)))
+    print(pformat("[ " .. level .. " ] (" .. self.name .. ") " .. f, unpack(args)))
 end
 
 function Log:error(f, ...)

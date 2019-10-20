@@ -43,6 +43,9 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
             conn = nil
             callback(err, length, hash, etag)
         end
+        finish = function()
+            --just in case some poor soul calls finish()
+        end
     end
 
     watchdogTimer:alarm(
@@ -116,7 +119,7 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
         function(x, err)
             connected = false
             if err ~= 0 then
-                finish(e, nil)
+                finish("Disconnected/Error connecting " .. err, nil)
             end
         end
     )

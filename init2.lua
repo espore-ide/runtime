@@ -1,4 +1,4 @@
-print("\n\n\n HomeNode starting ...")
+print("\n\n\nHomeNode starting ...")
 
 function start()
     if node.flashindex then
