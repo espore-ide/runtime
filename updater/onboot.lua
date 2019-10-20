@@ -9,7 +9,7 @@ local function updateonboot(info, reconnect)
     WifiManager.OnConnect:unlisten(updateonboot)
     updateonboot = nil
     local updater = require("updater.updater")
-    updater.unrequire("update.onboot")
+    require("core.pkg").unload("updater.onboot")
     if reconnect then
         return
     end

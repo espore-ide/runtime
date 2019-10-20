@@ -24,7 +24,10 @@ function start()
         for _, module in ipairs(modules) do
             if module.autostart then
                 log:info("Loading %s", module.name)
-                require(module.name)
+                local ok, err = pcall(require, module.name)
+                if not ok then
+                    log:error("Error loading module %s: %s", module.name, err)
+                end
             end
         end
     end
@@ -33,7 +36,10 @@ function start()
 
     firmware = json.read("firmware.json")
     if firmware then
-        loadModules(firmware.modules)
+        local ok, err = pcall(loadModules, firmware.modules)
+        if not ok then
+            log:error("Error loading modules: %s", err)
+        end
     end
 
     OnLoad:fire()

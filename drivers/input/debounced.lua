@@ -1,11 +1,11 @@
 -- Debounced configures a pin as input with interrupts and invokes a callback
--- with the debounced (filtered) final state
+-- with the debounced (filtered) final state.
 
 local Debounced = {}
 
 -- new() creates a debounced pin instance
 -- config:
--- pin: the pin to watch and configure as input
+-- pin: the pin to watch anfd configure as input
 -- bounce: in milliseconds, the time to wait until reading the final state
 -- callback: the function to invoke with the final state.
 function Debounced:new(config)
@@ -40,7 +40,7 @@ end
 function Debounced:destroy()
     self.timer:stop()
     self.timer:unregister()
-    self.timer=nil
+    self.timer = nil
 end
 
 return Debounced
