@@ -1,6 +1,6 @@
 local M = {}
 local Event = require("core.event")
-local WifiManager = require("wifimanager.wifimanager")
+local WifiManager = require("wifi.manager")
 M.OnUpdate = Event:new()
 
 local log = require("core.log"):new("update.onboot")
