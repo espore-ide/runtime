@@ -23,6 +23,9 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
     end
 
     local finish = function(err, length)
+        if watchdogTimer == nil then
+            return
+        end
         watchdogTimer:stop()
         watchdogTimer:unregister()
         watchdogTimer = nil
@@ -41,11 +44,8 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
                 connected = false
             end
             conn = nil
-            callback(err, length, hash, etag)
         end
-        finish = function()
-            --just in case some poor soul calls finish()
-        end
+        callback(err, length, hash, etag)
     end
 
     watchdogTimer:alarm(
@@ -54,8 +54,9 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
         function()
             if watchdogWritten == written then
                 finish("Download timeout", 0)
+            else
+                watchdogWritten = written
             end
-            watchdogWritten = written
         end
     )
 
