@@ -1,8 +1,12 @@
 local ToggleState = require("state.toggle")
 local PushButton = require("drivers.input.pushbutton")
 local OnOff = require("drivers.output.onoff")
-local portmap = require("portmap.portmap")
 local log = require("core.log")
+
+local ok, portmap = pcall(require, "portmap.portmap")
+if not ok then
+    error("Toggle: Cannot load portmap: " .. portmap)
+end
 
 local App = {}
 

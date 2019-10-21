@@ -25,7 +25,7 @@ local function main()
                 log:error("Error launching %s: %s", appInfo.module, err)
             end
         else
-            log:error("Cannot load module %s", appInfo.module)
+            log:error("Cannot load module %s: %s", appInfo.module, App)
         end
     end
 end

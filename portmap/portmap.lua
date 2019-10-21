@@ -21,7 +21,9 @@ portmap.inputPin = function(inputNum)
 end
 
 if not portmap.outputs or not portmap.inputs then
-    error("Portmap: no inputs/outputs defined. portmap0.json missing?")
+    local message = "Portmap: no inputs/outputs defined. portmap0.json missing?"
+    require("core.log"):new("portmap"):error(message)
+    error(message)
 end
 
 return portmap
