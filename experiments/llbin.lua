@@ -1,16 +1,16 @@
-__loader = {
+__espore = {
     echo = function(value)
         local b, d, p, s = uart.getconfig(0)
         uart.setup(0, b, d, p, s, value)
     end,
     start = function()
-        __loader.echo(0)
+        __espore.echo(0)
         print("\nREADY")
     end,
     finish = function()
         print("\nBYE")
-        __loader.echo(1)
-        __loader = nil
+        __espore.echo(1)
+        __espore = nil
     end,
     upload = function(fname, size)
         local remaining = size
@@ -45,4 +45,4 @@ __loader = {
         nextChunk()
     end
 }
-__loader.start()
+__espore.start()
