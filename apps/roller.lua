@@ -93,7 +93,7 @@ function App:init(config)
         config.inputDown,
         portmap.inputs[config.inputDown].name,
         inputDownPin,
-        config.output,
+        config.outputDown,
         portmap.outputs[config.outputDown].name,
         outputDownPin,
         config.timeDown
