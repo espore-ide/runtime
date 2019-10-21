@@ -8,7 +8,7 @@ local WifiManager = {}
 local WIFI_CONFIG_FILE = "wifi-config.json"
 local WIFI_LAST = "wifi-last.json"
 
-local log = require("core.log"):new("wifimanager")
+local log = require("core.log"):new("wifi.manager")
 
 local networks
 local currentNetwork = 0

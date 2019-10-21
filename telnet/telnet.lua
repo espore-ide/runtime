@@ -1,5 +1,5 @@
 local Telnet = {}
-local WifiManager = require("wifimanager")
+local WifiManager = require("wifi.manager")
 local log = require("log"):new("telnet")
 
 -- Telnet server
