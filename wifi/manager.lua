@@ -22,7 +22,6 @@ local function onconnect(info, reconnect)
     table.remove(networks, currentNetwork)
     table.insert(networks, 1, cfg)
     json.write(WIFI_LAST, cfg)
-    log:info("Connected to %s. IP=%s", cfg.ssid, info.ip)
 end
 
 local function connectNext()
@@ -45,6 +44,8 @@ WifiManager.start = function()
     wifi.sta.on(
         "got_ip",
         function(evt, info)
+            local cfg = networks[currentNetwork]
+            log:info("Connected to %s. IP=%s", cfg.ssid, info.ip)
             WifiManager.OnConnect:fire(info, reconnect)
             reconnect = true
         end
