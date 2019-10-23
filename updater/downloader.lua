@@ -2,8 +2,8 @@
 local Downloader = {}
 local pformat = require("core.stringutil").pformat
 
-Downloader.timeout = 1000
-Downloader.download = function(host, port, path, dstFile, etag, callback)
+Downloader.timeout = 60000
+Downloader.download = function(host, port, path, etag, onwrite, callback)
     local conn = net.createConnection(net.TCP, 0)
     local connected = false
     local hasher
@@ -12,14 +12,9 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
     local watchdogWritten = 0
     local watchdogTimer = tmr.create()
 
-    local write = function(data)
-        if f == nil then
-            f = file.open(dstFile, "w")
-            hasher = crypto.new_hash("SHA1")
-        end
-        f:write(data)
-        hasher:update(data)
+    local function write(data)
         written = written + #data
+        onwrite(data)
     end
 
     local finish = function(err, length)
@@ -29,15 +24,6 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
         watchdogTimer:stop()
         watchdogTimer:unregister()
         watchdogTimer = nil
-
-        local hash
-        if f ~= nil then
-            f:close()
-            hash = hasher:finalize()
-            hash = encoder.toHex(hash)
-            f = nil
-            hasher = nil
-        end
         if conn ~= nil then
             if connected then
                 conn:close()
@@ -45,7 +31,7 @@ Downloader.download = function(host, port, path, dstFile, etag, callback)
             end
             conn = nil
         end
-        callback(err, length, hash, etag)
+        callback(err, length, etag)
     end
 
     watchdogTimer:alarm(
