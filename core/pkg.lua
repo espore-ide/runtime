@@ -15,4 +15,16 @@ function pkg.unloadAll()
     end
 end
 
+function pkg.require(packageName, unload)
+    local p = package.loaded[packageName]
+    if p then
+        return p
+    end
+    p = require(packageName)
+    if unload then
+        pkg.unload(packageName)
+    end
+    return p
+end
+
 return pkg
