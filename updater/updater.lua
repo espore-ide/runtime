@@ -43,7 +43,6 @@ Updater.check = function(callback)
     local etag = readEtag()
     local imgFile = pformat("%s.img", node.chipid())
     local f
-    local hasher
     downloader.download(
         config.host,
         config.port,
@@ -52,19 +51,14 @@ Updater.check = function(callback)
         function(data)
             if f == nil then
                 f = file.open(IMAGE_FILE, "w")
-                hasher = crypto.new_hash("SHA1")
             end
             f:write(data)
-            hasher:update(data)
+            return true
         end,
         function(err, length, newEtag)
-            local hash
             if f ~= nil then
                 f:close()
-                hash = hasher:finalize()
-                hash = encoder.toHex(hash)
                 f = nil
-                hasher = nil
             end
             if err == 304 then
                 callback(Updater.RESULT_NO_UPDATES)
@@ -99,21 +93,20 @@ Updater.checkNodeMCU = function(callback)
                 started = true
                 local ok, err = pcall(otaupgrade.commence)
                 if not ok then
-                    callback(pformat("Error commencing NodeMCU firmware upgrade: %s", err))
-                    return
+                    return pformat("Error commencing NodeMCU firmware upgrade: %s", err)
                 end
                 log:info("Commencing NodeMCU firmware update...")
             end
             local ok, err = pcall(otaupgrade.write, data)
             if not ok then
-                callback(pformat("Error writing NodeMCU update data: %s", err))
-                return
+                return pformat("Error writing NodeMCU update data: %s", err)
             end
             bytes = bytes + #data
             if bytes - lastBytes > 100000 then
                 log:info("Downloaded %d bytes", bytes)
                 lastBytes = bytes
             end
+            return true
         end,
         function(err, length, newEtag)
             if err == 304 then

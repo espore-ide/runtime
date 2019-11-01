@@ -12,11 +12,6 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
     local watchdogWritten = 0
     local watchdogTimer = tmr.create()
 
-    local function write(data)
-        written = written + #data
-        onwrite(data)
-    end
-
     local finish = function(err, length)
         if watchdogTimer == nil then
             return
@@ -31,7 +26,28 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
             end
             conn = nil
         end
+        if hasher ~= nil then
+            local hash = hasher:finalize()
+            hash = encoder.toHex(hash)
+            hasher = nil
+            if hash ~= etag then
+                callback(pformat("Etag checksum error. Expected %s, got %s", etag, hash))
+                return
+            end
+        end
         callback(err, length, etag)
+    end
+
+    local function write(data)
+        if hasher ~= nil then
+            hasher:update(data)
+        end
+        written = written + #data
+        local result = onwrite(data)
+        if type(result) == "string" then
+            finish("Cancelled write: " .. result)
+            return
+        end
     end
 
     watchdogTimer:alarm(
@@ -52,9 +68,18 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
             connected = true
             local inm = ""
             if etag ~= nil then
-                inm = pformat("If-None-Match: %s\r\n", etag)
+                inm = pformat('If-None-Match: "%s"\r\n', etag)
             end
-            conn:send(pformat("GET %s HTTP/1.1\r\nHost: %s:%d\r\n%sAccept: */*\r\n\r\n", path, host, port, inm))
+            conn:send(
+                pformat(
+                    "GET %s HTTP/1.1\r\nHost: %s:%d\r\n%sAccept: */*\r\nUser-Agent: ESP32\r\nX-Chip-Id: %s\r\n\r\n",
+                    path,
+                    host,
+                    port,
+                    inm,
+                    node.chipid()
+                )
+            )
         end
     )
 
@@ -81,7 +106,12 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
                         finish("Missing Content-Length header")
                         return
                     end
-                    etag = string.match(header, "ETag:%s(.*)%s*\r\n")
+                    hh = header
+                    etag = string.match(header, 'Etag:%s"(%x*)"\r\n') or string.match(header, 'ETag:%s"(%x*)"\r\n')
+                    if "true" == string.match(header, "X--Etag--Verify:%s(true)%s*\r\n") then --activate hash verification
+                        hasher = crypto.new_hash("SHA1")
+                        print("\n\nwill verify hash, ---\n\n")
+                    end
                     headerReceived = true
                     write(content)
                     content = nil
