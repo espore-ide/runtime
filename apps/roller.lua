@@ -47,7 +47,7 @@ function App:init(config)
                     log:info("UP")
                 elseif status == RollerState.STATUS_DOWN then
                     outputUp:off()
-                    ourputDown:on()
+                    outputDown:on()
                     log:info("DOWN")
                 else
                     outputDown:off()
