@@ -1,4 +1,4 @@
--- datafile: appconfig.json
+-- datafile: app-config.json
 local function launchApp(App, appInfo)
     local instance = App:new()
     instance.name = appInfo.name
@@ -9,10 +9,10 @@ local function main()
     local json = require("core.json")
     local log = require("core.log"):new("launcher")
 
-    local appconfig = json.read("appconfig.json")
+    local appconfig = json.read("app-config.json")
 
     if appconfig == nil then
-        log:error("Cannot read appconfig.json. Launcher aborted.")
+        log:error("Cannot read app-config.json. Launcher aborted.")
         return
     end
 
