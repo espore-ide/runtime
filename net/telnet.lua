@@ -1,6 +1,6 @@
 local Telnet = {}
 local WifiManager = require("wifi.manager")
-local log = require("log"):new("telnet")
+local log = require("core.log"):new("telnet")
 
 -- Telnet server
 local telnet_srv = net.createServer(net.TCP, 180)

@@ -110,7 +110,6 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
                     etag = string.match(header, 'Etag:%s"(%x*)"\r\n') or string.match(header, 'ETag:%s"(%x*)"\r\n')
                     if "true" == string.match(header, "X--Etag--Verify:%s(true)%s*\r\n") then --activate hash verification
                         hasher = crypto.new_hash("SHA1")
-                        print("\n\nwill verify hash, ---\n\n")
                     end
                     headerReceived = true
                     write(content)
