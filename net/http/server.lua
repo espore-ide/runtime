@@ -11,9 +11,6 @@ return function(conf)
    conf.auth.loginCallback = conf.auth.loginCallback or function(user, password)
          return false
       end
-   conf.translatePath = conf.translatePath or function(r)
-         return "www/" .. string.sub(r.file, 2, -1)
-      end
    conf.port = conf.port or 80
 
    local httplog = require("core.log"):new("net.http.server:" .. conf.port)
@@ -81,7 +78,7 @@ return function(conf)
                local matches = {string.match(req.request, route.pattern or ".*")}
                if #matches > 0 then
                   if type(route.handler) == "function" then
-                     ok, func = pcall(route.handler, req, matches)
+                     local ok, func = pcall(route.handler, req, matches)
                      if not ok then
                         return errorHandler(503, "Error running handler: " .. func)
                      end
@@ -110,38 +107,6 @@ return function(conf)
 
             fileServeFunction = processRoute(conf.routes, req)
 
-            --[[             if #(uri.file) > 32 then
-               -- nodemcu-firmware cannot handle long filenames.
-               fileServeFunction = errorHandler(400, "Bad Request")
-            else
-               local fileExists = false
-
-               if not file.exists(uri.file) then
-                  -- print(uri.file .. " not found, checking gz version...")
-                  -- gzip check
-                  if file.exists(uri.file .. ".gz") then
-                     -- print("gzip variant exists, serving that one")
-                     uri.file = uri.file .. ".gz"
-                     uri.isGzipped = true
-                     fileExists = true
-                  end
-               else
-                  fileExists = true
-               end
-
-               if not fileExists then
-                  fileServeFunction = errorHandler(404, "Not Found")
-               elseif uri.isScript then
-                  fileServeFunction = dofile(uri.file)
-               else
-                  if allowStatic[method] then
-                     uri.args = {file = uri.file, ext = uri.ext, isGzipped = uri.isGzipped}
-                     fileServeFunction = require("net.http.static")
-                  else
-                     fileServeFunction = errorHandler(405, "Method not supported")
-                  end
-               end
-            end ]]
             startServing(fileServeFunction, connection, req, uri.args)
          end
 
