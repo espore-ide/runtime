@@ -95,9 +95,6 @@ local function parseUri(uri, translate)
    if uri == nil then
       return r
    end
-   if uri == "/" then
-      uri = "/index.html"
-   end
    local questionMarkPos, b, c, d, e, f = uri:find("?")
    if questionMarkPos == nil then
       r.file = uri:sub(1, questionMarkPos)
@@ -117,8 +114,6 @@ local function parseUri(uri, translate)
    elseif #fullExt >= 1 then
       r.ext = fullExt[#fullExt]
    end
-   r.isScript = r.ext == "lua" or r.ext == "lc"
-   r.file = translate(r)
    return r
 end
 

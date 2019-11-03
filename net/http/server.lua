@@ -1,5 +1,8 @@
 -- httpserver
--- Author: Marcos Kirsch
+-- Original Author: Marcos Kirsch
+-- Modifications for HomeNode by Javier Peletier
+
+local errorHandler = require("net.http.error")
 
 -- Starts web server in the specified port.
 return function(conf)
@@ -73,16 +76,43 @@ return function(conf)
             end
          end
 
+         local function processRoute(routes, req)
+            for _, route in ipairs(routes) do
+               local matches = {string.match(req.request, route.pattern or ".*")}
+               if #matches > 0 then
+                  if type(route.handler) == "function" then
+                     ok, func = pcall(route.handler, req, matches)
+                     if not ok then
+                        return errorHandler(503, "Error running handler: " .. func)
+                     end
+                     if type(func) == "function" then
+                        return func
+                     else
+                        --if a function is not returned, skip to the next handler
+                     end
+                  else
+                     if type(route.handler) == "table" then
+                        return processRoute(route.handler, req)
+                     else
+                        return errorHandler(503, "Invalid route handler")
+                     end
+                  end
+               end
+            end
+            return errorHandler(404, "No handler matches request")
+         end
+
          local function handleRequest(connection, req)
             collectgarbage()
             local method = req.method
             local uri = req.uri
             local fileServeFunction = nil
 
-            if #(uri.file) > 32 then
+            fileServeFunction = processRoute(conf.routes, req)
+
+            --[[             if #(uri.file) > 32 then
                -- nodemcu-firmware cannot handle long filenames.
-               uri.args = {code = 400, errorString = "Bad Request", logFunction = log}
-               fileServeFunction = require("net.http.error")
+               fileServeFunction = errorHandler(400, "Bad Request")
             else
                local fileExists = false
 
@@ -100,8 +130,7 @@ return function(conf)
                end
 
                if not fileExists then
-                  uri.args = {code = 404, errorString = "Not Found", logFunction = log}
-                  fileServeFunction = require("net.http.error")
+                  fileServeFunction = errorHandler(404, "Not Found")
                elseif uri.isScript then
                   fileServeFunction = dofile(uri.file)
                else
@@ -109,11 +138,10 @@ return function(conf)
                      uri.args = {file = uri.file, ext = uri.ext, isGzipped = uri.isGzipped}
                      fileServeFunction = require("net.http.static")
                   else
-                     uri.args = {code = 405, errorString = "Method not supported", logFunction = log}
-                     fileServeFunction = require("net.http.error")
+                     fileServeFunction = errorHandler(405, "Method not supported")
                   end
                end
-            end
+            end ]]
             startServing(fileServeFunction, connection, req, uri.args)
          end
 
@@ -157,21 +185,19 @@ return function(conf)
                req.user = user
                handleRequest(connection, req, handleError)
             else
-               local args = {}
-               local fileServeFunction = require("net.http.error")
+               local args
+               local fileServeFunction
                if not user then
+                  fileServeFunction = errorHandler(401, "Not Authorized")
                   args = {
-                     code = 401,
-                     errorString = "Not Authorized",
-                     headers = {auth.authErrorHeader(conf.auth.realm)},
-                     logFunction = log
+                     headers = {auth.authErrorHeader(conf.auth.realm)}
                   }
                elseif req.methodIsValid then
-                  args = {code = 501, errorString = "Not Implemented", logFunction = log}
+                  fileServeFunction = errorHandler(501, "Not Implemented")
                else
-                  args = {code = 400, errorString = "Bad Request", logFunction = log}
+                  fileServeFunction = errorHandler(400, "Bad Request")
                end
-               startServing(fileServeFunction, connection, req, args)
+               startServing(fileServeFunction, connection, req, args or {})
             end
          end
 

@@ -1,9 +1,10 @@
 -- httpserver-static.lua
 -- Part of nodemcu-httpserver, handles sending static files to client.
 -- Author: Marcos Kirsch
-
+local sendHeader = require("net.http.header")
+local ext2mime = require("net.http.mime")
 return function(connection, req, args)
-   require("net.http.header")(connection, 200, args.ext, args.isGzipped)
+   sendHeader(connection, 200, ext2mime(args.ext), args.isGzipped)
    -- Send file in little chunks
    local bytesRemaining = file.list()[args.file]
    -- Chunks larger than 1024 don't work.

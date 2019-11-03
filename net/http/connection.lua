@@ -5,6 +5,7 @@
 -- flush() and for closing the connection.
 -- Author: Philip Gladstone, Marcos Kirsch
 
+local sendHeader = require("net.http.header")
 local BufferedConnection = {}
 
 -- parameter is the nodemcu-firmware connection
@@ -56,6 +57,11 @@ function BufferedConnection:new(connection)
          self.size = self.size + payload:len()
       end
    end
+
+   function newInstance:sendHeader(code, mimeType, isGzipped, extraHeaders)
+      return sendHeader(self, code, mimeType, isGzipped, extraHeaders)
+   end
+
    return newInstance
 end
 
