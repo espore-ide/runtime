@@ -3,6 +3,9 @@
 -- Modifications for HomeNode by Javier Peletier
 
 local errorHandler = require("net.http.error")
+local processRoute = require("net.http.router")
+local parseRequest = require("net.http.request")
+local BufferedConnectionClass = require("net.http.connection")
 
 -- Starts web server in the specified port.
 return function(conf)
@@ -15,6 +18,16 @@ return function(conf)
 
    local httplog = require("core.log"):new("net.http.server:" .. conf.port)
    local s = net.createServer(net.TCP, 10) -- 10 seconds client timeout
+
+   -- Pretty log function.
+   local function log(connection, msg, optionalMsg)
+      local port, ip = connection:getpeer()
+      if (optionalMsg == nil) then
+         httplog:info("%s:%d\t%s", ip, port, msg)
+      else
+         httplog:info("%s:%d\t%s\t%s", ip, port, msg, optionalMsg)
+      end
+   end
 
    s:listen(
       conf.port,
@@ -36,16 +49,6 @@ return function(conf)
             PATCH = false
          }
 
-         -- Pretty log function.
-         local function log(connection, msg, optionalMsg)
-            local port, ip = connection:getpeer()
-            if (optionalMsg == nil) then
-               httplog:info("%s:%d\t%s", ip, port, msg)
-            else
-               httplog:info("%s:%d\t%s\t%s", ip, port, msg, optionalMsg)
-            end
-         end
-
          local function startServing(fileServeFunction, connection, req, args)
             connectionThread =
                coroutine.create(
@@ -61,7 +64,6 @@ return function(conf)
                end
             )
 
-            local BufferedConnectionClass = require("net.http.connection")
             local bufferedConnection = BufferedConnectionClass:new(connection)
             local status, err = coroutine.resume(connectionThread, fileServeFunction, bufferedConnection, req, args)
             if not status then
@@ -73,39 +75,11 @@ return function(conf)
             end
          end
 
-         local function processRoute(routes, req)
-            for _, route in ipairs(routes) do
-               local matches = {string.match(req.request, route.pattern or ".*")}
-               if #matches > 0 then
-                  if type(route.handler) == "function" then
-                     local ok, func = pcall(route.handler, req, matches)
-                     if not ok then
-                        return errorHandler(503, "Error running handler: " .. func)
-                     end
-                     if type(func) == "function" then
-                        return func
-                     else
-                        --if a function is not returned, skip to the next handler
-                     end
-                  else
-                     if type(route.handler) == "table" then
-                        return processRoute(route.handler, req)
-                     else
-                        return errorHandler(503, "Invalid route handler")
-                     end
-                  end
-               end
-            end
-            return errorHandler(404, "No handler matches request")
-         end
-
          local function handleRequest(connection, req)
             collectgarbage()
             local method = req.method
             local uri = req.uri
-            local fileServeFunction = nil
-
-            fileServeFunction = processRoute(conf.routes, req)
+            local fileServeFunction = processRoute(conf.routes, req)
 
             startServing(fileServeFunction, connection, req, uri.args)
          end
@@ -139,7 +113,7 @@ return function(conf)
             collectgarbage()
 
             -- parse payload and decide what to serve.
-            local req = require("net.http.request")(payload, conf.translatePath)
+            local req = parseRequest(payload, conf.translatePath)
             log(connection, req.method, req.request)
             if conf.auth.enabled then
                auth = require("net.http.basicauth")

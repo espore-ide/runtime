@@ -44,10 +44,8 @@ end
 
 local function parseFormData(body)
    local data = {}
-   --print("Parsing Form Data")
    for kv in body.gmatch(body, "%s*&?([^=]+=[^&]+)") do
       local key, value = string.match(kv, "(.*)=(.*)")
-      --print("Parsed: " .. key .. " => " .. value)
       data[key] = uri_decode(value)
    end
    return data
@@ -70,9 +68,6 @@ local function getRequestData(payload)
          local body = payload:sub(bodyStart, #payload)
          payload = nil
          collectgarbage()
-         --print("mimeType = [" .. mimeType .. "]")
-         --print("bodyStart = [" .. bodyStart .. "]")
-         --print("body = [" .. body .. "]")
          if mimeType == "application/json" then
             --print("JSON: " .. body)
             requestData = sjson.decode(body)
@@ -86,7 +81,7 @@ local function getRequestData(payload)
    end
 end
 
-local function parseUri(uri, translate)
+local function parseUri(uri)
    local r = {}
    local filename
    local ext
@@ -119,8 +114,7 @@ end
 
 -- Parses the client's request. Returns a dictionary containing pretty much everything
 -- the server needs to know about the uri.
-return function(request, translate)
-   --print("Request: \n", request)
+return function(request)
    local e = request:find("\r\n", 1, true)
    if not e then
       return nil
@@ -130,12 +124,10 @@ return function(request, translate)
    local _, i
    _, i, r.method, r.request = line:find("^([A-Z]+) (.-) HTTP/[1-9]+.[0-9]+$")
    if not (r.method and r.request) then
-      --print("invalid request: ")
-      --print(request)
       return nil
    end
    r.methodIsValid = validateMethod(r.method)
-   r.uri = parseUri(r.request, translate)
+   r.uri = parseUri(r.request)
    r.getRequestData = getRequestData(request)
    return r
 end
