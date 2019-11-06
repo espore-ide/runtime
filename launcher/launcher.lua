@@ -53,6 +53,12 @@ local function main()
     end
 end
 
-main()
+tmr.create():alarm(
+    100,
+    tmr.ALARM_SINGLE,
+    function()
+        main()
+    end
+)
 
 return Launcher

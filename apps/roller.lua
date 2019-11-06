@@ -113,4 +113,47 @@ function App:terminate()
     self.state:destroy()
 end
 
+function App:ui()
+    local this = self
+    if self._ui == nil then
+        self._ui = {
+            actions = {
+                {
+                    type = "button",
+                    label = "UP",
+                    action = function()
+                        this.state:up()
+                    end
+                },
+                {
+                    type = "button",
+                    label = "DOWN",
+                    action = function()
+                        this.state:down()
+                    end
+                }
+            },
+            dashboard = {
+                {
+                    type = "value",
+                    label = "STATUS",
+                    value = function()
+                        local state = this.state.state
+                        local st
+                        if state == RollerState.STATUS_UP then
+                            st = "UP"
+                        elseif state == RollerState.STATUS_DOWN then
+                            st = "DOWN"
+                        else
+                            st = "IDLE"
+                        end
+                        return st
+                    end
+                }
+            }
+        }
+    end
+    return self._ui
+end
+
 return App

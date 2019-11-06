@@ -1,6 +1,7 @@
 --
 local HttpServer = require("net.http.server")
 local serveFile = require("net.http.static")
+local serveJSON = require("net.http.json")
 local wifi =
     require("wifi.manager").OnConnect:listen(
     function()
@@ -18,6 +19,12 @@ local wifi =
                                     conn:send(tostring(k) .. " = " .. tostring(v) .. "\r\n")
                                 end
                             end
+                        end
+                    },
+                    {
+                        pattern = "/json",
+                        handler = function(r, matches)
+                            return serveJSON(file.list())
                         end
                     },
                     {
