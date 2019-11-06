@@ -38,19 +38,29 @@ local function main()
 
     log:info("Launcher module loaded")
     local i = 0
-    for _, appconfig in pairs(configs) do
-        if appconfig ~= nil then
-            for _, appInfo in pairs(appconfig) do
-                launch(appInfo)
-                i = i + 1
+    local lnTimer = tmr.create()
+    local launchNext =
+        coroutine.wrap(
+        function()
+            for _, appconfig in pairs(configs) do
+                if appconfig ~= nil then
+                    for _, appInfo in pairs(appconfig) do
+                        launch(appInfo)
+                        i = i + 1
+                        coroutine.yield()
+                    end
+                end
             end
+            if i == 0 then
+                log:warning("No applications were launched. Does app-config.json or site-app-config.json exist?")
+            else
+                log:info("%d application(s) launched", i)
+            end
+            lnTimer:stop()
+            lnTimer:unregister()
         end
-    end
-    if i == 0 then
-        log:warning("No applications were launched. Does app-config.json or site-app-config.json exist?")
-    else
-        log:info("%d application(s) launched", i)
-    end
+    )
+    lnTimer:alarm(1000, tmr.ALARM_AUTO, launchNext)
 end
 
 tmr.create():alarm(
