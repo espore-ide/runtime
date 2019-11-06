@@ -48,6 +48,8 @@ WifiManager.start = function()
             log:info("Connected to %s. IP=%s", cfg.ssid, info.ip)
             WifiManager.OnConnect:fire(info, reconnect)
             reconnect = true
+            info.ssid = cfg.ssid
+            WifiManager.info = info
         end
     )
     wifi.sta.on(
