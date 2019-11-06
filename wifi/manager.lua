@@ -49,6 +49,7 @@ WifiManager.start = function()
             WifiManager.OnConnect:fire(info, reconnect)
             reconnect = true
             info.ssid = cfg.ssid
+            info.mac = wifi.sta.getmac()
             WifiManager.info = info
         end
     )

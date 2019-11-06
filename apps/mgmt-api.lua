@@ -116,5 +116,23 @@ function App:terminate()
     self.s:close()
 end
 
+function App:ui()
+    local this = self
+    if self._ui == nil then
+        self._ui = {
+            actions = {
+                {
+                    type = "button",
+                    label = "Restart",
+                    action = function()
+                        node.restart()
+                    end
+                }
+            },
+            dashboard = {}
+        }
+    end
+    return self._ui
+end
+
 return App
---
