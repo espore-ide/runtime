@@ -50,4 +50,17 @@ function M.merge(a, b)
     return a
 end
 
+function M.clean(a)
+    local b = {}
+    for k, v in pairs(a) do
+        local t = type(v)
+        if t == "table" then
+            b[k] = M.clean(v)
+        elseif t == "boolean" or t == "number" or t == "string" then
+            b[k] = v
+        end
+    end
+    return b
+end
+
 return M
