@@ -14,7 +14,8 @@ local codez = {
    [404] = "Not Found",
    [405] = "Method Not Allowed",
    [500] = "Internal Server Error",
-   [501] = "Not Implemented"
+   [501] = "Not Implemented",
+   [503] = "Service Unavailable"
 }
 
 -- parameter is the nodemcu-firmware connection
