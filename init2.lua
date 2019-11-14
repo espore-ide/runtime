@@ -24,9 +24,15 @@ function start()
         for _, module in ipairs(modules) do
             if module.autostart then
                 log:info("Loading %s", module.name)
-                local ok, err = pcall(require, module.name)
+                local ok, modFunc = pcall(require, module.name)
                 if not ok then
-                    log:error("Error loading module %s: %s", module.name, err)
+                    log:error("Error loading module %s: %s", module.name, modFunc)
+                end
+                if type(modFunc) == "function" then
+                    ok, err = pcall(modFunc, module.config)
+                    if not ok then
+                        log:error("Error initializing module %s: %s", module.name, err)
+                    end
                 end
             end
         end
