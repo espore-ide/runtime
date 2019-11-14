@@ -72,11 +72,13 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
             end
             conn:send(
                 pformat(
-                    "GET %s HTTP/1.1\r\nHost: %s:%d\r\n%sAccept: */*\r\nUser-Agent: ESP32\r\nX-Chip-Id: %s\r\n\r\n",
+                    "GET %s HTTP/1.1\r\nHost: %s:%d\r\n%sAccept: */*\r\n" ..
+                        "User-Agent: ESP32\r\nX-Node-Name: %s\r\nX-Chip-Id: %s\r\n\r\n",
                     path,
                     host,
                     port,
                     inm,
+                    firmware and firmware.name or "Default",
                     node.chipid()
                 )
             )
