@@ -18,7 +18,9 @@ local routes = {
                     chipid = node.chipid(),
                     firmware = firmware,
                     heap = node.heap(),
-                    connectionInfo = WifiManager.info
+                    connectionInfo = WifiManager.info,
+                    uptime = node.uptime() / 1000000,
+                    mainsFrequency = dimmer.mainsFrequency() / 100
                 }
             )
         end
@@ -51,7 +53,6 @@ local routes = {
                 end
                 table.insert(apps, appInfo)
             end
-
             return serveJSON(apps)
         end
     },
