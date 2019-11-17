@@ -28,6 +28,11 @@ function start()
                 if not ok then
                     log:error("Error loading module %s: %s", module.name, modFunc)
                 end
+                if type(modFunc) == "table" then
+                    if type(modFunc.init) == "function" then
+                        modFunc = modFunc.init
+                    end
+                end
                 if type(modFunc) == "function" then
                     ok, err = pcall(modFunc, module.config)
                     if not ok then
@@ -41,8 +46,9 @@ function start()
     OnLoad = Event:new()
 
     firmware = json.read("firmware.json")
+    local modules = json.read("modules.json")
     if firmware then
-        local ok, err = pcall(loadModules, firmware.modules)
+        local ok, err = pcall(loadModules, modules)
         if not ok then
             log:error("Error loading modules: %s", err)
         end
