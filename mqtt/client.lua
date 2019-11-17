@@ -1,5 +1,5 @@
 MClient = {}
-local log = require("log"):new("mqtt-client")
+local log = require("core.log"):new("mqtt.client")
 
 function MClient:new(basePath, clientId, host, port, onConnect)
     local o = {}

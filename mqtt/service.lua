@@ -1,7 +1,7 @@
-local json = require("json")
-local MClient = require("mqttclient")
-local log = require("log"):new("mqtt-service")
-local Event = require("event")
+local json = require("core.json")
+local MClient = require("mqtt.client")
+local log = require("core.log"):new("mqtt.service")
+local Event = require("core.event")
 
 local config = json.read("mqtt-config.json")
 if config.clientid == "$" then
