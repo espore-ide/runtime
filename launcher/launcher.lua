@@ -12,6 +12,7 @@ local function launchApp(App, appInfo)
         return
     end
     instance.name = appInfo.name
+    instance.description = appInfo.description
     local ok, err = pcall(instance.init, instance, appInfo.config)
     if not ok then
         log:error("Error initializing %s: %s", appInfo.name, err)

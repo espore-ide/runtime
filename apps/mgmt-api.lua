@@ -33,6 +33,7 @@ local routes = {
                 local appInfo = {
                     id = appId,
                     name = app.name,
+                    description = app.description,
                     actions = {},
                     dashboard = {}
                 }
