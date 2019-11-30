@@ -5,41 +5,46 @@ function MClient:new(basePath, clientId, host, port, onConnect)
     local o = {}
     setmetatable(o, self)
     self.__index = self
-    o.m = mqtt.Client(clientId, 120)
     o.base = basePath .. "/" .. clientId .. "/"
     o.topics = {}
     o.reconnect = false
+    local connect
     local disconnected
     local connected = function()
         log:info("Connection to MQTT established. Base: " .. o.base)
         o.connected = true
-        o.topics = {}
+        for topicName, topic in pairs(o.topics) do
+            o.m:subscribe(topicName, topic.qos, topic.onSubscribe)
+        end
         onConnect(o.reconnect)
         o.reconnect = true
     end
     local connectionFailed
-    local connect = function()
-        log:info("Connecting to MQTT ...")
-        if ESP8266 then
-            o.m:connect(host, port, 0, 0, connected, disconnected)
-        else
-            o.m:connect(host, port, 0, 0, connected)
-        end
-    end
     disconnected = function()
         log:warning("Disconnected from MQTT.")
         o.connected = false
         tmr.create():alarm(5 * 1000, tmr.ALARM_SINGLE, connect)
     end
-
     local processMessage = function(client, topicName, data)
-        topic = o.topics[topicName]
+        local topic = o.topics[topicName]
         if topic ~= nil and topic.onMessage ~= nil then
-            topic.onMessage(data)
+            local ok, err = pcall(topic.onMessage, data)
+            if not ok then
+                log:error("Error invoking message handler for %s: %s", topicName, err)
+            end
             return
         end
         log:warning("unrecognized topic " .. topicName)
     end
+    connect = function()
+        log:info("Connecting to MQTT ...")
+        if ESP8266 then
+            o.m:connect(host, port, 0, 0, connected, disconnected)
+        else
+            o.m:connect(host, port, 0, 0)
+        end
+    end
+    o.m = mqtt.Client(clientId, 120)
     o.m:on("connect", connected)
     o.m:on("offline", disconnected)
     o.m:on("message", processMessage)
@@ -58,12 +63,19 @@ end
 
 function MClient:subscribe_(topicName, qos, onMessage, onSubscribe)
     local topic = self.topics[topicName]
+    qos = qos or 0
     if topic == nil then
         topic = Topic:new(self, topicName, qos, onMessage)
         self.topics[topicName] = topic
     end
-    qos = qos or 0
-    self.m:subscribe(topicName, qos, onSubscribe)
+    if self.connected then
+        self.m:subscribe(topicName, topic.qos, onSubscribe)
+    else
+        topic.onSubscribe = function()
+            topic.onSubscribe = nil
+            onSubscribe()
+        end
+    end
     return topic
 end
 
@@ -73,6 +85,16 @@ end
 
 function MClient:getTopic(topicName, qos)
     return Topic:new(self, self:parseTopic(topicName), qos)
+end
+
+function MClient:publish(topicName, data, qos, retain, ackCallback)
+    qos = qos or 0
+    if retain then
+        retain = 1
+    else
+        retain = 0
+    end
+    self.m:publish(self:parseTopic(topicName), data, qos, retain, ackCallback)
 end
 
 Topic = {}
@@ -90,7 +112,11 @@ end
 
 function Topic:publish(data, qos, retain, ackCallback)
     qos = qos or self.qos or 0
-    retain = retain or 0
+    if retain then
+        retain = 1
+    else
+        retain = 0
+    end
     return self.client.m:publish(self.topicName, data, qos, retain, ackCallback)
 end
 
