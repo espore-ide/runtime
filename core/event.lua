@@ -8,8 +8,8 @@ function Event:new()
     return o
 end
 
-function Event:listen(handler)
-    self.listeners[handler] = handler
+function Event:listen(handler, once)
+    self.listeners[handler] = once or false
 end
 
 function Event:unlisten(handler)
@@ -21,8 +21,11 @@ function Event:clear()
 end
 
 function Event:fire(...)
-    for _, listener in pairs(self.listeners) do
-        listener(...)
+    for handler, once in pairs(self.listeners) do
+        handler(...)
+        if once then
+            self.listeners[handler] = nil
+        end
     end
 end
 

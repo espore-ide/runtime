@@ -1,13 +1,15 @@
 MClient = {}
 local log = require("core.log"):new("mqtt.client")
+local Event = require("core.event")
 
-function MClient:new(basePath, clientId, host, port, onConnect)
+function MClient:new(basePath, clientId, host, port)
     local o = {}
     setmetatable(o, self)
     self.__index = self
-    o.base = basePath .. "/" .. clientId .. "/"
+    o.base = basePath .. "/"
     o.topics = {}
     o.reconnect = false
+    o.OnConnect = Event:new()
     local connect
     local disconnected
     local connected = function()
@@ -16,7 +18,7 @@ function MClient:new(basePath, clientId, host, port, onConnect)
         for topicName, topic in pairs(o.topics) do
             o.m:subscribe(topicName, topic.qos, topic.onSubscribe)
         end
-        onConnect(o.reconnect)
+        o.OnConnect:fire(o.reconnect)
         o.reconnect = true
     end
     local connectionFailed
@@ -71,9 +73,11 @@ function MClient:subscribe_(topicName, qos, onMessage, onSubscribe)
     if self.connected then
         self.m:subscribe(topicName, topic.qos, onSubscribe)
     else
-        topic.onSubscribe = function()
-            topic.onSubscribe = nil
-            onSubscribe()
+        if onSubscribe then
+            topic.onSubscribe = function()
+                topic.onSubscribe = nil
+                onSubscribe()
+            end
         end
     end
     return topic
@@ -95,6 +99,26 @@ function MClient:publish(topicName, data, qos, retain, ackCallback)
         retain = 0
     end
     self.m:publish(self:parseTopic(topicName), data, qos, retain, ackCallback)
+end
+
+function MClient:runOnConnect(callback, once)
+    if self.connected then
+        callback()
+        if once then
+            return
+        end
+    end
+    self.OnConnect:listen(callback, once)
+end
+
+function MClient:subclient(basePath)
+    local o = {}
+    setmetatable(o, getmetatable(self))
+    o.base = self.base .. basePath .. "/"
+    o.topics = self.topics
+    o.m = self.m
+    o.OnConnect = self.OnConnect
+    return o
 end
 
 Topic = {}

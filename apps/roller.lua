@@ -3,6 +3,7 @@ local PushButton = require("drivers.input.pushbutton")
 local OnOff = require("drivers.output.onoff")
 local portmap = require("portmap.portmap")
 local log = require("core.log")
+local mqtt = require("mqtt.service")
 
 local App = {}
 
@@ -31,6 +32,8 @@ function App:init(config)
     local log = log:new("apps.roller/" .. self.name)
     local outputUp = OnOff:new({pin = outputUpPin})
     local outputDown = OnOff:new({pin = outputDownPin})
+    local statusTopic = mqtt:getTopic(config.mqttTopic, 0)
+
     config.bounce = config.bounce or 50
     config.timeUp = config.timeUp or 10000
     config.timeDown = config.timeDown or 10000
@@ -44,16 +47,15 @@ function App:init(config)
                 if status == RollerState.STATUS_UP then
                     outputDown:off()
                     outputUp:on()
-                    log:info("UP")
                 elseif status == RollerState.STATUS_DOWN then
                     outputUp:off()
                     outputDown:on()
-                    log:info("DOWN")
                 else
                     outputDown:off()
                     outputUp:off()
-                    log:info("IDLE")
                 end
+                statusTopic:publish(status)
+                log:info(status)
             end
         }
     )
@@ -76,6 +78,27 @@ function App:init(config)
                 state:down()
             end
         }
+    )
+
+    local commandTopic =
+        mqtt:subscribe(
+        config.mqttTopic .. "/set",
+        0,
+        function(data)
+            if data == RollerState.STATUS_UP then
+                state:up()
+            elseif data == RollerState.STATUS_DOWN then
+                state:down()
+            else
+                state:stop()
+            end
+        end
+    )
+
+    mqtt:runOnConnect(
+        function(reconnect)
+            statusTopic:publish(state.state)
+        end
     )
 
     log:info(
@@ -138,16 +161,7 @@ function App:ui()
                     type = "value",
                     label = "STATUS",
                     value = function()
-                        local state = this.state.state
-                        local st
-                        if state == RollerState.STATUS_UP then
-                            st = "UP"
-                        elseif state == RollerState.STATUS_DOWN then
-                            st = "DOWN"
-                        else
-                            st = "IDLE"
-                        end
-                        return st
+                        return this.state.state
                     end
                 }
             }

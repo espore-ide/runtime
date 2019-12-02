@@ -4,9 +4,9 @@
 
 RSS = {}
 
-RSS.STATUS_IDLE = 0
-RSS.STATUS_UP = 1
-RSS.STATUS_DOWN = 2
+RSS.STATUS_IDLE = "IDLE"
+RSS.STATUS_UP = "UP"
+RSS.STATUS_DOWN = "DOWN"
 
 --config:
 -- timeUp: Time in the up state before going idle
@@ -59,6 +59,10 @@ end
 -- down switches the machine to the "going down" state
 function RSS:down()
     self:activate(RSS.STATUS_DOWN, self.timeDown)
+end
+
+function RSS:stop()
+    self:activate(RSS.STATUS_IDLE)
 end
 
 function RSS:destroy()

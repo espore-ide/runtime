@@ -3,8 +3,8 @@
 
 local ToggleState = {}
 
-ToggleState.STATUS_OFF = 0
-ToggleState.STATUS_ON = 1
+ToggleState.STATUS_OFF = "OFF"
+ToggleState.STATUS_ON = "ON"
 
 -- config:
 -- callback: (function) Function to call on state change

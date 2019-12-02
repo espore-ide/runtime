@@ -2,6 +2,7 @@ local ToggleState = require("state.toggle")
 local PushButton = require("drivers.input.pushbutton")
 local OnOff = require("drivers.output.onoff")
 local log = require("core.log")
+local mqtt = require("mqtt.service")
 
 local ok, portmap = pcall(require, "portmap.portmap")
 if not ok then
@@ -22,17 +23,19 @@ function App:init(config)
     local inputPin = portmap.inputPin(config.input)
     local log = log:new("apps.toggle/" .. self.name)
     local output = OnOff:new({pin = outputPin})
+    local statusTopic = mqtt:getTopic(config.mqttTopic, 0)
+
     local state =
         ToggleState:new(
         {
             callback = function(status)
                 if status == ToggleState.STATUS_ON then
                     output:on()
-                    log:info("ON")
                 else
                     output:off()
-                    log:info("OFF")
                 end
+                statusTopic:publish(status)
+                log:info(status)
             end
         }
     )
@@ -46,6 +49,24 @@ function App:init(config)
             end
         }
     )
+    local commandTopic =
+        mqtt:subscribe(
+        config.mqttTopic .. "/set",
+        0,
+        function(data)
+            if data == ToggleState.STATUS_ON then
+                state:set(ToggleState.STATUS_ON)
+            else
+                state:set(ToggleState.STATUS_OFF)
+            end
+        end
+    )
+    mqtt:runOnConnect(
+        function(reconnect)
+            statusTopic:publish(state.state)
+        end
+    )
+
     log:info(
         "Init: Input %d (%s, pin %d) -> Output %d (%s, pin %d)",
         config.input,
@@ -87,13 +108,7 @@ function App:ui()
                     type = "value",
                     label = "STATUS",
                     value = function()
-                        local st
-                        if this.state.state == ToggleState.STATUS_OFF then
-                            st = "OFF"
-                        else
-                            st = "ON"
-                        end
-                        return st
+                        return this.state.state
                     end
                 }
             }
