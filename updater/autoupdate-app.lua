@@ -1,5 +1,6 @@
 local log = require("core.log"):new("autoupdate")
 local updater = require("updater.updater")
+local mqtt = require("mqtt.service")
 
 local App = {}
 
@@ -15,7 +16,7 @@ end
 
 function App:init(config)
     self.timer = tmr:create()
-    log:info("Will check for updates every %d seconds", config.period)
+    log:info("Will check for updates every %d seconds until MQTT connects", config.period)
     self.timer:alarm(
         config.period * 1000,
         tmr.ALARM_AUTO,
@@ -23,6 +24,21 @@ function App:init(config)
             self:checkUpdates()
         end
     )
+    mqtt:subscribe(
+        "espore/global/update/set",
+        0,
+        function(data)
+            self:checkUpdates()
+        end
+    )
+    mqtt:runOnConnect(
+        function()
+            self.timer:unregister()
+            self.timer = nil
+            log:info("Will check on updates on MQTT message from now on.")
+        end
+    )
+
     self.lastChecked = node.uptime()
 end
 
