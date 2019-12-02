@@ -18,6 +18,7 @@ return function(config)
     client:runOnConnect(
         function(reconnect)
             client:publish("sys/version", firmware.version, 0, true)
+            client:publish("sys/chipid", node.chipid(), 0, true)
             client:publish("sys/wifi/ip", wifi.info.ip, 0, true)
             client:publish("sys/wifi/mac", wifi.info.mac, 0, true)
             client:publish("sys/wifi/ssid", wifi.info.ssid, 0, true)
