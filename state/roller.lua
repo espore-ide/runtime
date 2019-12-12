@@ -62,7 +62,7 @@ function RSS:down()
 end
 
 function RSS:stop()
-    self:activate(RSS.STATUS_IDLE)
+    self:set(RSS.STATUS_IDLE)
 end
 
 function RSS:destroy()
