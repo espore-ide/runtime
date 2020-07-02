@@ -14,7 +14,7 @@ function App:new()
     return o
 end
 
---config:
+-- config:
 -- inputUp: Input to use for receiving the command to go up
 -- inputDown: Input to use for receiving the command to go down
 -- outputUp: Output to control the shutter to go up
@@ -38,89 +38,57 @@ function App:init(config)
     config.timeUp = config.timeUp or 10000
     config.timeDown = config.timeDown or 10000
 
-    local state =
-        RollerState:new(
-        {
-            timeUp = config.timeUp,
-            timeDown = config.timeDown,
-            callback = function(status)
-                if status == RollerState.STATUS_UP then
-                    outputDown:off()
-                    outputUp:on()
-                elseif status == RollerState.STATUS_DOWN then
-                    outputUp:off()
-                    outputDown:on()
-                else
-                    outputDown:off()
-                    outputUp:off()
-                end
-                statusTopic:publish(status)
-                log:info(status)
-            end
-        }
-    )
-    local inputUp =
-        PushButton:new(
-        {
-            pin = inputUpPin,
-            bounce = config.bounce,
-            callback = function()
-                state:up()
-            end
-        }
-    )
-    local inputDown =
-        PushButton:new(
-        {
-            pin = inputDownPin,
-            bounce = config.bounce,
-            callback = function()
-                state:down()
-            end
-        }
-    )
-
-    local commandTopic =
-        mqtt:subscribe(
-        config.mqttTopic .. "/set",
-        0,
-        function(data)
-            if data == RollerState.STATUS_UP then
-                state:up()
-            elseif data == RollerState.STATUS_DOWN then
-                state:down()
+    local state = RollerState:new({
+        timeUp = config.timeUp,
+        timeDown = config.timeDown,
+        callback = function(status)
+            if status == RollerState.STATUS_UP then
+                outputDown:off()
+                outputUp:on()
+            elseif status == RollerState.STATUS_DOWN then
+                outputUp:off()
+                outputDown:on()
             else
-                state:stop()
+                outputDown:off()
+                outputUp:off()
             end
+            statusTopic:publish(status)
+            log:info(status)
         end
-    )
+    })
+    local inputUp = PushButton:new({
+        pin = inputUpPin,
+        bounce = config.bounce,
+        callback = function() state:up() end
+    })
+    local inputDown = PushButton:new({
+        pin = inputDownPin,
+        bounce = config.bounce,
+        callback = function() state:down() end
+    })
 
-    mqtt:runOnConnect(
-        function(reconnect)
-            statusTopic:publish(state.state)
+    local commandTopic = mqtt:subscribe(config.mqttTopic .. "/set", 0,
+                                        function(data)
+        if data == RollerState.STATUS_UP then
+            state:up()
+        elseif data == RollerState.STATUS_DOWN then
+            state:down()
+        else
+            state:stop()
         end
-    )
+    end)
 
-    log:info(
-        "Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
-        config.inputUp,
-        portmap.inputs[config.inputUp].name,
-        inputUpPin,
-        config.outputUp,
-        portmap.outputs[config.outputUp].name,
-        outputUpPin,
-        config.timeUp
-    )
+    mqtt:runOnConnect(function(reconnect) statusTopic:publish(state.state) end)
+
+    log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
+             config.inputUp, portmap.inputs[config.inputUp].name, inputUpPin,
+             config.outputUp, portmap.outputs[config.outputUp].name,
+             outputUpPin, config.timeUp)
     log:info(
         "Init: InputDown %d (%s, pin %d) -> OutputDown %d (%s, pin %d), t=%d",
-        config.inputDown,
-        portmap.inputs[config.inputDown].name,
-        inputDownPin,
-        config.outputDown,
-        portmap.outputs[config.outputDown].name,
-        outputDownPin,
-        config.timeDown
-    )
+        config.inputDown, portmap.inputs[config.inputDown].name, inputDownPin,
+        config.outputDown, portmap.outputs[config.outputDown].name,
+        outputDownPin, config.timeDown)
     self.outputUp = outputUp
     self.outputDown = outputDown
     self.inputUp = inputUp
@@ -144,16 +112,11 @@ function App:ui()
                 {
                     type = "button",
                     label = "UP",
-                    action = function()
-                        this.state:up()
-                    end
-                },
-                {
+                    action = function() this.state:up() end
+                }, {
                     type = "button",
                     label = "DOWN",
-                    action = function()
-                        this.state:down()
-                    end
+                    action = function() this.state:down() end
                 }
             },
             dashboard = {

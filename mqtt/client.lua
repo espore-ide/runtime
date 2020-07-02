@@ -32,7 +32,8 @@ function MClient:new(basePath, clientId, host, port)
         if topic ~= nil and topic.onMessage ~= nil then
             local ok, err = pcall(topic.onMessage, data)
             if not ok then
-                log:error("Error invoking message handler for %s: %s", topicName, err)
+                log:error("Error invoking message handler for %s: %s",
+                          topicName, err)
             end
             return
         end
@@ -84,7 +85,8 @@ function MClient:subscribe_(topicName, qos, onMessage, onSubscribe)
 end
 
 function MClient:subscribe(topicName, qos, onMessage, onSubscribe)
-    return self:subscribe_(self:parseTopic(topicName), qos, onMessage, onSubscribe)
+    return self:subscribe_(self:parseTopic(topicName), qos, onMessage,
+                           onSubscribe)
 end
 
 function MClient:getTopic(topicName, qos)
@@ -104,9 +106,7 @@ end
 function MClient:runOnConnect(callback, once)
     if self.connected then
         callback()
-        if once then
-            return
-        end
+        if once then return end
     end
     self.OnConnect:listen(callback, once)
 end

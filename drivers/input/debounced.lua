@@ -1,6 +1,5 @@
 -- Debounced configures a pin as input with interrupts and invokes a callback
 -- with the debounced (filtered) final state.
-
 local Debounced = {}
 
 -- new() creates a debounced pin instance
@@ -13,19 +12,13 @@ function Debounced:new(config)
     setmetatable(o, self)
     self.__index = self
     o.timer = tmr.create()
-    o.timer:register(
-        config.bounce,
-        tmr.ALARM_SEMI,
-        function()
-            if config.callback ~= nil then
-                config.callback(gpio.read(config.pin))
-            end
+    o.timer:register(config.bounce, tmr.ALARM_SEMI, function()
+        if config.callback ~= nil then
+            config.callback(gpio.read(config.pin))
         end
-    )
+    end)
 
-    local intfunc = function()
-        o.timer:start()
-    end
+    local intfunc = function() o.timer:start() end
 
     if gpio.mode == nil then
         gpio.config({gpio = config.pin, dir = gpio.IN, pull = gpio.PULL_UP})

@@ -13,9 +13,7 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
     local watchdogTimer = tmr.create()
 
     local finish = function(err, length)
-        if watchdogTimer == nil then
-            return
-        end
+        if watchdogTimer == nil then return end
         watchdogTimer:stop()
         watchdogTimer:unregister()
         watchdogTimer = nil
@@ -31,7 +29,8 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
             hash = encoder.toHex(hash)
             hasher = nil
             if hash ~= etag then
-                callback(pformat("Etag checksum error. Expected %s, got %s", etag, hash))
+                callback(pformat("Etag checksum error. Expected %s, got %s",
+                                 etag, hash))
                 return
             end
         end
@@ -39,9 +38,7 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
     end
 
     local function write(data)
-        if hasher ~= nil then
-            hasher:update(data)
-        end
+        if hasher ~= nil then hasher:update(data) end
         written = written + #data
         local result = onwrite(data)
         if type(result) == "string" then
@@ -50,97 +47,82 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
         end
     end
 
-    watchdogTimer:alarm(
-        Downloader.timeout,
-        tmr.ALARM_AUTO,
-        function()
-            if watchdogWritten == written then
-                finish("Download timeout", 0)
-            else
-                watchdogWritten = written
-            end
+    watchdogTimer:alarm(Downloader.timeout, tmr.ALARM_AUTO, function()
+        if watchdogWritten == written then
+            finish("Download timeout", 0)
+        else
+            watchdogWritten = written
         end
-    )
+    end)
 
-    conn:on(
-        "connection",
-        function(conn)
-            connected = true
-            local inm = ""
-            if etag ~= nil then
-                inm = pformat('If-None-Match: "%s"\r\n', etag)
-            end
-            conn:send(
-                pformat(
-                    "GET %s HTTP/1.1\r\nHost: %s:%d\r\n%sAccept: */*\r\n" ..
-                        "User-Agent: ESP32\r\nX-Node-Name: %s\r\nX-Chip-Id: %s\r\n\r\n",
-                    path,
-                    host,
-                    port,
-                    inm,
-                    firmware and firmware.name or "Default",
-                    node.chipid()
-                )
-            )
+    conn:on("connection", function(conn)
+        connected = true
+        local inm = ""
+        if etag ~= nil then
+            inm = pformat('If-None-Match: "%s"\r\n', etag)
         end
-    )
+        conn:send(pformat(
+                      "GET %s HTTP/1.1\r\nHost: %s:%d\r\n%sAccept: */*\r\n" ..
+                          "User-Agent: ESP32\r\nX-Node-Name: %s\r\nX-Chip-Id: %s\r\n\r\n",
+                      path, host, port, inm,
+                      firmware and firmware.name or "Default", node.chipid()))
+    end)
 
     local content = ""
     local headerReceived = false
     local contentLength = -1
-    conn:on(
-        "receive",
-        function(conn, data)
-            if not headerReceived then
-                content = content .. data
-                collectgarbage()
-                local i, j = string.find(content, "\r\n\r\n")
-                if i ~= nil then
-                    local header = string.sub(content, 1, i - 1)
-                    content = string.sub(content, j + 1)
-                    local status = tonumber(string.match(header, "^HTTP/%d.%d (%d+) .-\r\n"))
-                    if status ~= 200 then
-                        finish(status)
-                        return
-                    end
-                    contentLength = tonumber(string.match(header, "Content--Length: (%d+)\r\n"))
-                    if contentLength == nil then
-                        finish("Missing Content-Length header")
-                        return
-                    end
-                    hh = header
-                    etag = string.match(header, 'Etag:%s"(%x*)"\r\n') or string.match(header, 'ETag:%s"(%x*)"\r\n')
-                    if "true" == string.match(header, "X--Etag--Verify:%s(true)%s*\r\n") then --activate hash verification
-                        hasher = crypto.new_hash("SHA1")
-                    end
-                    headerReceived = true
-                    write(content)
-                    content = nil
-                else
-                    if #content > 1000 then
-                        finish("Header too big")
-                        return
-                    end
+    conn:on("receive", function(conn, data)
+        if not headerReceived then
+            content = content .. data
+            collectgarbage()
+            local i, j = string.find(content, "\r\n\r\n")
+            if i ~= nil then
+                local header = string.sub(content, 1, i - 1)
+                content = string.sub(content, j + 1)
+                local status = tonumber(string.match(header,
+                                                     "^HTTP/%d.%d (%d+) .-\r\n"))
+                if status ~= 200 then
+                    finish(status)
+                    return
                 end
+                contentLength = tonumber(
+                                    string.match(header,
+                                                 "Content--Length: (%d+)\r\n"))
+                if contentLength == nil then
+                    finish("Missing Content-Length header")
+                    return
+                end
+                hh = header
+                etag = string.match(header, 'Etag:%s"(%x*)"\r\n') or
+                           string.match(header, 'ETag:%s"(%x*)"\r\n')
+                if "true" ==
+                    string.match(header, "X--Etag--Verify:%s(true)%s*\r\n") then -- activate hash verification
+                    hasher = crypto.new_hash("SHA1")
+                end
+                headerReceived = true
+                write(content)
+                content = nil
             else
-                write(data)
+                if #content > 1000 then
+                    finish("Header too big")
+                    return
+                end
             end
-            if contentLength ~= -1 and written >= contentLength then
-                finish(nil, written)
-                return
-            end
+        else
+            write(data)
         end
-    )
+        if contentLength ~= -1 and written >= contentLength then
+            finish(nil, written)
+            return
+        end
+    end)
 
-    conn:on(
-        "disconnection",
-        function(x, err)
-            connected = false
-            if err ~= 0 then
-                finish("Disconnected/Error connecting " .. err, nil)
-            end
+    conn:on("disconnection", function(x, err)
+        connected = false
+        if err ~= 0 then
+            finish("Disconnected/Error connecting " .. err, nil)
         end
-    )
+    end)
 
     conn:connect(port, host)
 end

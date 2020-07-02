@@ -11,33 +11,22 @@ function App:new()
     return o
 end
 
---config:
+-- config:
 -- period: time in sec to check for updates
 
 function App:init(config)
     self.timer = tmr:create()
-    log:info("Will check for updates every %d seconds until MQTT connects", config.period)
-    self.timer:alarm(
-        config.period * 1000,
-        tmr.ALARM_AUTO,
-        function()
-            self:checkUpdates()
-        end
-    )
-    mqtt:subscribe(
-        "espore/global/update/set",
-        0,
-        function(data)
-            self:checkUpdates()
-        end
-    )
-    mqtt:runOnConnect(
-        function()
-            self.timer:unregister()
-            self.timer = nil
-            log:info("Will check on updates on MQTT message from now on.")
-        end
-    )
+    log:info("Will check for updates every %d seconds until MQTT connects",
+             config.period)
+    self.timer:alarm(config.period * 1000, tmr.ALARM_AUTO,
+                     function() self:checkUpdates() end)
+    mqtt:subscribe("espore/global/update/set", 0,
+                   function(data) self:checkUpdates() end)
+    mqtt:runOnConnect(function()
+        self.timer:unregister()
+        self.timer = nil
+        log:info("Will check on updates on MQTT message from now on.")
+    end)
 
     self.lastChecked = node.uptime()
 end
@@ -45,15 +34,13 @@ end
 function App:checkUpdates()
     log:info("Checking for updates ...")
     self.lastChecked = node.uptime()
-    updater.update(
-        function(result)
-            if type(result) == "string" then
-                log:error("Error while checking for updates: %s", result)
-            else
-                log:info("Update check finished successfully")
-            end
+    updater.update(function(result)
+        if type(result) == "string" then
+            log:error("Error while checking for updates: %s", result)
+        else
+            log:info("Update check finished successfully")
         end
-    )
+    end)
 end
 
 function App:terminate()
@@ -70,9 +57,7 @@ function App:ui()
                 {
                     type = "button",
                     label = "Check now",
-                    action = function()
-                        this:checkUpdates()
-                    end
+                    action = function() this:checkUpdates() end
                 }
             },
             dashboard = {
@@ -80,7 +65,9 @@ function App:ui()
                     type = "value",
                     label = "Last checked (s ago)",
                     value = function()
-                        return tostring(math.floor((node.uptime() - this.lastChecked) / 1000000))
+                        return tostring(math.floor(
+                                            (node.uptime() - this.lastChecked) /
+                                                1000000))
                     end
                 }
             }

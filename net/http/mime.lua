@@ -12,6 +12,4 @@ local mt = {
     xml = "text/xml"
 }
 
-return function(ext)
-    return mt[ext] or "text/plain"
-end
+return function(ext) return mt[ext] or "text/plain" end

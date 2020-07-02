@@ -1,5 +1,4 @@
 -- OnOff configures a pin as output, tracking its state
-
 local OnOff = {}
 OnOff.STATE_ON = 1
 OnOff.STATE_OFF = 0
@@ -27,15 +26,10 @@ function OnOff:set(state)
     self.state = state
 end
 
-function OnOff:on()
-    self:set(OnOff.STATE_ON)
-end
+function OnOff:on() self:set(OnOff.STATE_ON) end
 
-function OnOff:off()
-    self:set(OnOff.STATE_OFF)
-end
+function OnOff:off() self:set(OnOff.STATE_OFF) end
 
-function OnOff:destroy()
-end
+function OnOff:destroy() end
 
 return OnOff

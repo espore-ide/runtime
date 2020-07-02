@@ -1,7 +1,6 @@
 -- PushButton configures an input pin as a push button
 -- a push button will invoke the callback only when the corresponding
 -- input has been set low for the debounce period
-
 local Debounced = require("drivers.input.debounced")
 
 local PushButton = {}
@@ -15,18 +14,13 @@ function PushButton:new(config)
     local o = {}
     setmetatable(o, self)
     self.__index = self
-    self._db =
-        Debounced:new(
-        {
-            pin = config.pin,
-            bounce = config.bounce,
-            callback = function(state)
-                if state == 0 then
-                    config.callback()
-                end
-            end
-        }
-    )
+    self._db = Debounced:new({
+        pin = config.pin,
+        bounce = config.bounce,
+        callback = function(state)
+            if state == 0 then config.callback() end
+        end
+    })
     return o
 end
 

@@ -10,20 +10,14 @@ function pkg.unloadAll()
     for packageName, _ in pairs(package.loaded) do
         packages[#packages] = packageName
     end
-    for _, packageName in ipairs(packages) do
-        pkg.unload(packageName)
-    end
+    for _, packageName in ipairs(packages) do pkg.unload(packageName) end
 end
 
 function pkg.require(packageName, unload)
     local p = package.loaded[packageName]
-    if p then
-        return p
-    end
+    if p then return p end
     p = require(packageName)
-    if unload then
-        pkg.unload(packageName)
-    end
+    if unload then pkg.unload(packageName) end
     return p
 end
 

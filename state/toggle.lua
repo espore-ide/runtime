@@ -1,6 +1,5 @@
 -- ToggleState represents a state machine of a toggled button
 -- Invokes the callback when the status changes
-
 local ToggleState = {}
 
 ToggleState.STATUS_OFF = "OFF"
@@ -21,9 +20,7 @@ end
 
 function ToggleState:set(state)
     self.state = state
-    if self.callback ~= nil then
-        self.callback(state)
-    end
+    if self.callback ~= nil then self.callback(state) end
 end
 
 function ToggleState:toggle()
@@ -36,7 +33,6 @@ function ToggleState:toggle()
     self:set(newState)
 end
 
-function ToggleState:destroy()
-end
+function ToggleState:destroy() end
 
 return ToggleState

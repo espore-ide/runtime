@@ -2,17 +2,13 @@ local M = {}
 
 function M.parse(data)
     local ok, obj = pcall(sjson.decode, data)
-    if not ok then
-        obj = nil
-    end
+    if not ok then obj = nil end
     return obj
 end
 
 function M.read(fileName)
     local f = file.open(fileName, "r")
-    if not f then
-        return nil
-    end
+    if not f then return nil end
     local data = ""
     while true do
         local chunk = f:read()

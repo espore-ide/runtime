@@ -13,19 +13,16 @@ local routes = {
     {
         pattern = "/nodeinfo",
         handler = function(r, matches)
-            return serveJSON(
-                {
-                    chipid = node.chipid(),
-                    firmware = firmware,
-                    heap = node.heap(),
-                    connectionInfo = WifiManager.info,
-                    uptime = node.uptime() / 1000000,
-                    mainsFrequency = dimmer.mainsFrequency() / 100
-                }
-            )
+            return serveJSON({
+                chipid = node.chipid(),
+                firmware = firmware,
+                heap = node.heap(),
+                connectionInfo = WifiManager.info,
+                uptime = node.uptime() / 1000000,
+                mainsFrequency = dimmer.mainsFrequency() / 100
+            })
         end
-    },
-    {
+    }, {
         pattern = "^/apps$",
         handler = function(r, matches)
             local apps = {}
@@ -56,18 +53,19 @@ local routes = {
             end
             return serveJSON(apps)
         end
-    },
-    {
+    }, {
         pattern = "/apps/(%d*)/action/(%d*)",
         methods = {"POST"},
         handler = function(r, matches)
             local app = Launcher.apps[tonumber(matches[1])]
             if not app then
-                return serveError(404, "Application " .. matches[1] .. " not found")
+                return serveError(404,
+                                  "Application " .. matches[1] .. " not found")
             end
             local ui = app.ui and app:ui()
             if ui == nil then
-                return serveError(404, "Application " .. matches[1] .. " does not define a UI")
+                return serveError(404, "Application " .. matches[1] ..
+                                      " does not define a UI")
             end
             local action = ui.actions[tonumber(matches[2])]
             if not action or type(action.action) ~= "function" then
@@ -80,20 +78,15 @@ local routes = {
 
             return serveJSON({result = "OK"})
         end
-    },
-    {
+    }, {
         pattern = "/files",
-        handler = function(r, matches)
-            return serveJSON(file.list())
-        end
-    },
-    {
+        handler = function(r, matches) return serveJSON(file.list()) end
+    }, {
         pattern = "^(.*/)$",
         handler = function(r, matches)
             return serveFile(WWW_PATH .. matches[1] .. "index.html")
         end
-    },
-    {
+    }, {
         pattern = ".*",
         handler = function(r, matches)
             return serveFile(WWW_PATH .. matches[1])
@@ -111,12 +104,11 @@ end
 function App:init(config)
     config = config or {}
     self.s = HttpServer({port = config.port, routes = routes})
-    require("core.log"):new("httpserver/" .. self.name):info("HTTP server started")
+    require("core.log"):new("httpserver/" .. self.name):info(
+        "HTTP server started")
 end
 
-function App:terminate()
-    self.s:close()
-end
+function App:terminate() self.s:close() end
 
 function App:ui()
     local this = self
@@ -126,9 +118,7 @@ function App:ui()
                 {
                     type = "button",
                     label = "Restart",
-                    action = function()
-                        node.restart()
-                    end
+                    action = function() node.restart() end
                 }
             },
             dashboard = {}

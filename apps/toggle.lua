@@ -5,9 +5,7 @@ local log = require("core.log")
 local mqtt = require("mqtt.service")
 
 local ok, portmap = pcall(require, "portmap.portmap")
-if not ok then
-    error("Toggle: Cannot load portmap: " .. portmap)
-end
+if not ok then error("Toggle: Cannot load portmap: " .. portmap) end
 
 local App = {}
 
@@ -25,57 +23,35 @@ function App:init(config)
     local output = OnOff:new({pin = outputPin})
     local statusTopic = mqtt:getTopic(config.mqttTopic, 0)
 
-    local state =
-        ToggleState:new(
-        {
-            callback = function(status)
-                if status == ToggleState.STATUS_ON then
-                    output:on()
-                else
-                    output:off()
-                end
-                statusTopic:publish(status)
-                log:info(status)
-            end
-        }
-    )
-    local input =
-        PushButton:new(
-        {
-            pin = inputPin,
-            bounce = config.bounce or 50,
-            callback = function()
-                state:toggle()
-            end
-        }
-    )
-    local commandTopic =
-        mqtt:subscribe(
-        config.mqttTopic .. "/set",
-        0,
-        function(data)
-            if data == ToggleState.STATUS_ON then
-                state:set(ToggleState.STATUS_ON)
+    local state = ToggleState:new({
+        callback = function(status)
+            if status == ToggleState.STATUS_ON then
+                output:on()
             else
-                state:set(ToggleState.STATUS_OFF)
+                output:off()
             end
+            statusTopic:publish(status)
+            log:info(status)
         end
-    )
-    mqtt:runOnConnect(
-        function(reconnect)
-            statusTopic:publish(state.state)
+    })
+    local input = PushButton:new({
+        pin = inputPin,
+        bounce = config.bounce or 50,
+        callback = function() state:toggle() end
+    })
+    local commandTopic = mqtt:subscribe(config.mqttTopic .. "/set", 0,
+                                        function(data)
+        if data == ToggleState.STATUS_ON then
+            state:set(ToggleState.STATUS_ON)
+        else
+            state:set(ToggleState.STATUS_OFF)
         end
-    )
+    end)
+    mqtt:runOnConnect(function(reconnect) statusTopic:publish(state.state) end)
 
-    log:info(
-        "Init: Input %d (%s, pin %d) -> Output %d (%s, pin %d)",
-        config.input,
-        portmap.inputs[config.input].name,
-        inputPin,
-        config.output,
-        portmap.outputs[config.output].name,
-        outputPin
-    )
+    log:info("Init: Input %d (%s, pin %d) -> Output %d (%s, pin %d)",
+             config.input, portmap.inputs[config.input].name, inputPin,
+             config.output, portmap.outputs[config.output].name, outputPin)
     self.output = output
     self.input = input
     self.state = state
@@ -98,9 +74,7 @@ function App:ui()
                 {
                     type = "button",
                     label = "TOGGLE",
-                    action = function()
-                        this.state:toggle()
-                    end
+                    action = function() this.state:toggle() end
                 }
             },
             dashboard = {

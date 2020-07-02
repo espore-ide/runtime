@@ -20,12 +20,13 @@ processRoute = function(routes, req)
                 if type(route.handler) == "function" then
                     local ok, func = pcall(route.handler, req, matches)
                     if not ok then
-                        return errorHandler(500, "Error running handler: " .. func)
+                        return errorHandler(500,
+                                            "Error running handler: " .. func)
                     end
                     if type(func) == "function" then
                         return func
                     else
-                        --if a function is not returned, skip to the next handler
+                        -- if a function is not returned, skip to the next handler
                     end
                 else
                     if type(route.handler) == "table" then
