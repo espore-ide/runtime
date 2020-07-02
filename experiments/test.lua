@@ -1,7 +1,10 @@
-local updater = require("updater.updater")
+local defer = require("core.defer")
+local i = 0
+func = function()
+    i = i + 1
+    print(i)
+    -- node.task.post(node.task.LOW_PRIORITY, func)
+    if i < 8000 then defer(func) end
+end
 
-updater.check(
-    function(result)
-        print("Update result: " .. result)
-    end
-)
+func()

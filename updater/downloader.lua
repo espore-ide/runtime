@@ -1,6 +1,7 @@
 -- import: core
 local Downloader = {}
 local pformat = require("core.stringutil").pformat
+local defer = require("core.defer")
 
 Downloader.timeout = 60000
 Downloader.download = function(host, port, path, etag, onwrite, callback)
@@ -11,6 +12,7 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
     local written = 0
     local watchdogWritten = 0
     local watchdogTimer = tmr.create()
+    local throttleCounter = 0
 
     local finish = function(err, length)
         if watchdogTimer == nil then return end
@@ -114,6 +116,16 @@ Downloader.download = function(host, port, path, etag, onwrite, callback)
         if contentLength ~= -1 and written >= contentLength then
             finish(nil, written)
             return
+        end
+        -- Every 100k, block receiving to yield to the OS:
+        if throttleCounter > 100000 then
+            throttleCounter = 0
+            conn:hold() -- block receiving
+            defer(function()
+                conn:unhold() -- resume receiving
+            end)
+        else
+            throttleCounter = throttleCounter + #data
         end
     end)
 
