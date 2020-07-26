@@ -1,4 +1,5 @@
 {
+    "name": "Espore common runtime",
     "exclude": [
         ".git"
     ]
