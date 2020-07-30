@@ -140,9 +140,9 @@ Updater.update = function(callback)
                 else
                     if result == Updater.RESULT_NO_UPDATES then
                         log:info("No updates found")
-                        if __FIRMWARE_ACCEPT == false then
-                            __FIRMWARE_ACCEPT = true
+                        if type(__acceptFirmware) == "function" then
                             log:info("Accepting application firmware")
+                            __acceptFirmware()
                         end
                     else
                         log:error("Error checking for updates: %s", result)
