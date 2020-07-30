@@ -3,7 +3,7 @@ local WifiManager = require("wifi.manager")
 local log = require("core.log"):new("telnet")
 
 -- Telnet server
-local telnet_srv = net.createServer(net.TCP, 180)
+local telnet_srv
 
 local function startTelnet(port, motd)
     log:info("Started Telnet server on port " .. port)
@@ -62,6 +62,8 @@ ls = function()
 end
 
 WifiManager.OnConnect:listen(function()
+    if telnet_srv ~= nil then return end
+    telnet_srv = net.createServer(net.TCP, 180)
     startTelnet(23, "Welcome to " .. firmware.name)
 end)
 
