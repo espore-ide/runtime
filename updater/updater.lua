@@ -8,6 +8,7 @@ local downloader = pkg.require("updater.downloader", true)
 
 local CONFIG_FILE = "updater-config.json"
 local ETAG_FILE = "updater-etag.json"
+local IMAGE_FILE_TMP = "update.img.tmp"
 local IMAGE_FILE = "update.img"
 
 local config = json.read(CONFIG_FILE)
@@ -34,7 +35,7 @@ Updater.check = function(callback)
     local f
     downloader.download(config.host, config.port, config.basePath .. imgFile,
                         etag.AppETag, function(data)
-        if f == nil then f = file.open(IMAGE_FILE, "w") end
+        if f == nil then f = file.open(IMAGE_FILE_TMP, "w") end
         f:write(data)
         return true
     end, function(err, length, newEtag)
@@ -135,6 +136,8 @@ Updater.update = function(callback)
             else
                 if result == Updater.RESULT_NEW_IMAGE then
                     log:info("New application image found.")
+                    file.remove(IMAGE_FILE)
+                    file.rename(IMAGE_FILE_TMP, IMAGE_FILE)
                     restart()
                     return
                 else
