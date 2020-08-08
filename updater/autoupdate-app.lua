@@ -15,7 +15,7 @@ end
 -- config:
 -- period: time in sec to check for updates
 function App:init(config)
-    self.timer = tmr:create()
+    self.timer = tmr.create()
 
     local function checkUpdatesFromMQTT()
         self:checkUpdates("mqtt message received")
