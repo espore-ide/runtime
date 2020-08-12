@@ -18,8 +18,7 @@ local TRIG_SET_POS = "setpos"
 
 local STATE_UNDEF = "UNDEF" -- Starting state. We don't know the actual position of the shutter
 local STATE_FULLY_OPENING = "FULLY OPENING" -- opening the shutter all the way
-local STATE_FULLY_CLOSING = "FULLY CLOSING"
--- closing the shutter all the way
+local STATE_FULLY_CLOSING = "FULLY CLOSING" -- closing the shutter all the way
 local STATE_HOMING = "HOMING" -- opening the shutter to sync this state machine with the shutter
 local STATE_POSITIONED = "POSITIONED" -- we know where the shutter is
 local STATE_CLOSING = "CLOSING" -- closing the shutter towards the requested position
