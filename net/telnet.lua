@@ -61,6 +61,17 @@ ls = function()
     for k, v in pairs(l) do print(k .. ", " .. v) end
 end
 
+cat = function(fileName)
+    local f = file.open(fileName, "r")
+    if f then
+        local st = f:readline()
+        while st ~= nil do
+            print(st:sub(1, #st - 1))
+            st = f:readline()
+        end
+    end
+end
+
 WifiManager.OnConnect:listen(function()
     if telnet_srv ~= nil then return end
     telnet_srv = net.createServer(net.TCP, 180)
