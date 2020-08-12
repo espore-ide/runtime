@@ -30,7 +30,7 @@ function App:init(config)
             else
                 output:off()
             end
-            statusTopic:publish(status)
+            statusTopic:publish(status, 0, true)
             log:info(status)
         end
     })
@@ -47,7 +47,9 @@ function App:init(config)
             state:set(ToggleState.STATUS_OFF)
         end
     end)
-    mqtt:runOnConnect(function(reconnect) statusTopic:publish(state.state) end)
+    mqtt:runOnConnect(function(reconnect)
+        statusTopic:publish(state.state, 0, true)
+    end)
 
     log:info("Init: Input %d (%s, pin %d) -> Output %d (%s, pin %d)",
              config.input, portmap.inputs[config.input].name, inputPin,

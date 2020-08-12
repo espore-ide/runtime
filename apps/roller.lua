@@ -52,7 +52,7 @@ function App:init(config)
                 outputDown:off()
                 outputUp:off()
             end
-            statusTopic:publish(status)
+            statusTopic:publish(status, 0, true)
             log:info(status)
         end
     })
@@ -78,7 +78,9 @@ function App:init(config)
         end
     end)
 
-    mqtt:runOnConnect(function(reconnect) statusTopic:publish(state.state) end)
+    mqtt:runOnConnect(function(reconnect)
+        statusTopic:publish(state.state, 0, true)
+    end)
 
     log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
              config.inputUp, portmap.inputs[config.inputUp].name, inputUpPin,
