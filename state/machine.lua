@@ -26,9 +26,7 @@ end
 -- Throws in case the state does not exist
 function SM:get(stateName)
     local state = self.states[stateName]
-    if state == nil then
-        error(pformat("Unknown state: %s", stateName))
-    end
+    if state == nil then error(pformat("Unknown state: %s", stateName)) end
     return state
 end
 
@@ -37,9 +35,7 @@ end
 -- trigger: The trigger that started the transition
 -- parm: parameter passed to the trigger
 function SM:set(stateName, trigger, parm)
-    if self.timer then
-        self.timer:unregister()
-    end
+    if self.timer then self.timer:unregister() end
     -- invoke current state exit handler, if any:
     local state = self:get(stateName)
     if self.current and self.current.exit then
@@ -63,21 +59,15 @@ function SM:set(stateName, trigger, parm)
         if timeout.time == 0 then
             self:set(timeout.target, SM.TRIG_TIMEOUT)
         else
-            if self.timer == nil then
-                self.timer = tmr.create()
-            end
-            self.timer:alarm(
-                timeout.time,
-                tmr.ALARM_SINGLE,
-                function()
-                    self:set(timeout.target, SM.TRIG_TIMEOUT, timeout.parm)
-                end
-            )
+            if self.timer == nil then self.timer = tmr.create() end
+            self.timer:alarm(timeout.time, tmr.ALARM_SINGLE, function()
+                self:set(timeout.target, SM.TRIG_TIMEOUT, timeout.parm)
+            end)
         end
     end
 end
 
---setTimeout allows for defining the current state's timeout dynamically
+-- setTimeout allows for defining the current state's timeout dynamically
 function SM:setTimeout(time, target, parm)
     timeout = self.current.triggers[SM.TRIG_TIMEOUT] or {}
     timeout.time = time or timeout.time
@@ -91,15 +81,11 @@ end
 -- parm: Parameter for this trigger (will be passed to the target state's enter() handler)
 function SM:trigger(trigger, parm)
     local newState = self.current.triggers[trigger]
-    if type(newState) == "function" then
-        newState, parm = newState(parm)
-    end
+    if type(newState) == "function" then newState, parm = newState(parm) end
     if type(newState) == "table" and newState.target then
         newState = newState.target
     end
-    if newState == nil then
-        return
-    end
+    if newState == nil then return end
     self:set(newState, trigger, parm)
 end
 
