@@ -44,6 +44,7 @@ function App:init(config)
     local state = RollerState:new({
         timeUp = config.timeUp,
         timeDown = config.timeDown,
+        timeSlack = config.timeSlack,
         callback = function(pos, motor, state)
             motorState = motor
             if motor == RollerState.MOTOR_STATUS_UP then
@@ -94,7 +95,7 @@ function App:init(config)
     end)
 
     mqtt:runOnConnect(function(reconnect)
-        statusTopic:publish(stateStr(state:getPos()), 0, true)
+        statusTopic:publish(stateStr(state:getpos()), 0, true)
     end)
 
     log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
