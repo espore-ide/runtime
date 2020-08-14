@@ -34,10 +34,12 @@ function round(x) return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5) en
 -- config:
 -- timeUp: Time in the up state before going idle
 -- timeDown: Time in the down state before going idle
+-- timeSlack: Extra time to add to make sure endstop is reached when going fully open or closed
 -- callback: Function to call when there are state changes
 
 -- new creates a new state machine
 function RSS:new(config)
+    config.timeSlack = config.timeSlack or 0
     local o = {}
     -- wrap callback so we return rounded shutter positions
     local callback = function(pos, motor, stateName)
@@ -76,7 +78,10 @@ function RSS:new(config)
                 -- if a specific position is set, then we need to home the shutter first:
                 [TRIG_SET_POS] = STATE_UNDEF_CHECKDIR,
                 -- if we are able to stay for the full time, then we know the position:
-                timeout = {time = time, target = STATE_POSITIONED}
+                timeout = {
+                    time = time + config.timeSlack,
+                    target = STATE_POSITIONED
+                }
             }
         end
     end
@@ -93,7 +98,10 @@ function RSS:new(config)
                     targetPos = target
                     callback(o.pos, motor, state.name)
                     -- based on the target, estimate how long to run the shutter for
-                    o.machine:setTimeout(time * dir * (targetPos - o.pos) / 100)
+                    local timeout = time * dir * (targetPos - o.pos) / 100
+                    timeout = (targetPos == 0 or targetPos == 100) and timeout +
+                                  config.timeSlack or timeout
+                    o.machine:setTimeout(timeout)
                     timestamp = node.uptime()
                     startReporting(motor, state.name, dir, time, timestamp)
                 end
@@ -195,7 +203,7 @@ end
 
 -- set (private) forces a particular state, coming from any other state
 function RSS:setpos(target) self.machine:trigger(TRIG_SET_POS, target) end
-
+function RSS:getpos() return self.pos and round(self.pos) end
 function RSS:stop() self.machine:trigger(TRIG_STOP) end
 
 function RSS:destroy() end

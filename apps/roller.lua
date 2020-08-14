@@ -23,6 +23,8 @@ end
 -- timeDown: Time to have the shutter go fully down. (milliseconds)
 -- bounce: debounce period to configure for input buttons
 
+function stateStr(pos) return pos and tostring(pos) or "UNDEF" end
+
 function App:init(config)
     local outputUpPin = portmap.outputPin(config.outputUp)
     local outputDownPin = portmap.outputPin(config.outputDown)
@@ -42,6 +44,7 @@ function App:init(config)
     local state = RollerState:new({
         timeUp = config.timeUp,
         timeDown = config.timeDown,
+        timeSlack = config.timeSlack,
         callback = function(pos, motor, state)
             motorState = motor
             if motor == RollerState.MOTOR_STATUS_UP then
@@ -54,7 +57,7 @@ function App:init(config)
                 outputDown:off()
                 outputUp:off()
             end
-            statusTopic:publish(pos and tostring(pos) or "UNDEF", 0, true)
+            statusTopic:publish(stateStr(pos), 0, true)
             log:info("pos=%s", tostring(pos))
         end
     })
@@ -92,7 +95,7 @@ function App:init(config)
     end)
 
     mqtt:runOnConnect(function(reconnect)
-        statusTopic:publish(state.state, 0, true)
+        statusTopic:publish(stateStr(state:getpos()), 0, true)
     end)
 
     log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
