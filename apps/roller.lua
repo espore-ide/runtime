@@ -38,6 +38,8 @@ function App:init(config)
     config.timeUp = config.timeUp or 10000
     config.timeDown = config.timeDown or 10000
 
+    local stateStr = function(pos) return pos and tostring(pos) or "UNDEF" end
+
     local motorState
     local state = RollerState:new({
         timeUp = config.timeUp,
@@ -54,7 +56,7 @@ function App:init(config)
                 outputDown:off()
                 outputUp:off()
             end
-            statusTopic:publish(pos and tostring(pos) or "UNDEF", 0, true)
+            statusTopic:publish(stateStr(pos), 0, true)
             log:info("pos=%s", tostring(pos))
         end
     })
@@ -92,7 +94,7 @@ function App:init(config)
     end)
 
     mqtt:runOnConnect(function(reconnect)
-        statusTopic:publish(state.state, 0, true)
+        statusTopic:publish(stateStr(state:getPos()), 0, true)
     end)
 
     log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",

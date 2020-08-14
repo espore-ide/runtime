@@ -34,11 +34,13 @@ function round(x) return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5) en
 -- config:
 -- timeUp: Time in the up state before going idle
 -- timeDown: Time in the down state before going idle
+-- timeSlack: Additional time to add to ensure fully open/closed endstop is reached
 -- callback: Function to call when there are state changes
 
 -- new creates a new state machine
 function RSS:new(config)
     local o = {}
+    config.timeSlack = config.timeSlack or 0
     -- wrap callback so we return rounded shutter positions
     local callback = function(pos, motor, stateName)
         config.callback(pos and round(pos), motor, stateName)
@@ -76,7 +78,10 @@ function RSS:new(config)
                 -- if a specific position is set, then we need to home the shutter first:
                 [TRIG_SET_POS] = STATE_UNDEF_CHECKDIR,
                 -- if we are able to stay for the full time, then we know the position:
-                timeout = {time = time, target = STATE_POSITIONED}
+                timeout = {
+                    time = time + config.timeSlack,
+                    target = STATE_POSITIONED
+                }
             }
         end
     end
@@ -176,9 +181,12 @@ function RSS:new(config)
             [STATE_CHECKDIR] = {
                 enter = function(target)
                     target = normalizePos(target)
-                    return target == o.pos and STATE_POSITIONED or
-                               (target > o.pos and STATE_CLOSING or
-                                   STATE_OPENING), target
+                    return
+                        target == 100 and STATE_FULLY_CLOSING or target == 0 and
+                            STATE_FULLY_OPENING or target == o.pos and
+                            STATE_POSITIONED or
+                            (target > o.pos and STATE_CLOSING or STATE_OPENING),
+                        target
                 end
             },
             [STATE_OPENING] = openCloseState(RSS.MOTOR_STATUS_UP, -1,
@@ -195,6 +203,8 @@ end
 
 -- set (private) forces a particular state, coming from any other state
 function RSS:setpos(target) self.machine:trigger(TRIG_SET_POS, target) end
+
+function RSS:getpos() return self.pos and round(self.pos) end
 
 function RSS:stop() self.machine:trigger(TRIG_STOP) end
 
