@@ -22,6 +22,7 @@ function App:init(config)
     local log = log:new("apps.toggle/" .. self.name)
     local output = OnOff:new({pin = outputPin})
     local statusTopic = mqtt:getTopic(config.mqttTopic, 0)
+    local this = self
 
     local state = ToggleState:new({
         callback = function(status)
@@ -47,8 +48,20 @@ function App:init(config)
             state:set(ToggleState.STATUS_OFF)
         end
     end)
+
     mqtt:runOnConnect(function(reconnect)
         statusTopic:publish(state.state, 0, true)
+        local ha = {
+            name = this.description,
+            unique_id = this.name,
+            command_topic = mqtt.base .. config.mqttTopic .. "/set",
+            state_topic = mqtt.base .. config.mqttTopic,
+            payload_on = "ON",
+            payload_off = "OFF"
+        }
+        mqtt:publish("light/" .. firmware.name:gsub("[^%w-_]", "") .. "/" ..
+                         this.name:gsub("[^%w-_]", "") .. "/config",
+                     sjson.encode(ha), 0, true)
     end)
 
     log:info("Init: Input %d (%s, pin %d) -> Output %d (%s, pin %d)",

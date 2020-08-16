@@ -30,6 +30,7 @@ function App:init(config)
     local outputDownPin = portmap.outputPin(config.outputDown)
     local inputUpPin = portmap.inputPin(config.inputUp)
     local inputDownPin = portmap.inputPin(config.inputDown)
+    local this = self
 
     local log = log:new("apps.roller/" .. self.name)
     local outputUp = OnOff:new({pin = outputUpPin})
@@ -96,6 +97,19 @@ function App:init(config)
 
     mqtt:runOnConnect(function(reconnect)
         statusTopic:publish(stateStr(state:getpos()), 0, true)
+        local ha = {
+            name = this.description,
+            unique_id = this.name,
+            command_topic = mqtt.base .. config.mqttTopic .. "/set",
+            state_topic = mqtt.base .. config.mqttTopic,
+            payload_open = "UP",
+            payload_close = "DOWN",
+            payload_stop = "STOP",
+            optimistic = true
+        }
+        mqtt:publish("cover/" .. firmware.name:gsub("[^%w-_]", "") .. "/" ..
+                         this.name:gsub("[^%w-_]", "") .. "/config",
+                     sjson.encode(ha), 0, true)
     end)
 
     log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
