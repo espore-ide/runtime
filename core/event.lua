@@ -1,4 +1,5 @@
 local Event = {}
+local defer = require("core.defer")
 
 function Event:new()
     local o = {}
@@ -15,8 +16,9 @@ function Event:unlisten(handler) self.listeners[handler] = nil end
 function Event:clear() self.listeners = {} end
 
 function Event:fire(...)
+    local args = {n = select("#", ...), ...}
     for handler, once in pairs(self.listeners) do
-        handler(...)
+        defer(function() handler(unpack(args)) end)
         if once then self.listeners[handler] = nil end
     end
 end

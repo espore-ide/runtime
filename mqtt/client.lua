@@ -1,6 +1,7 @@
 MClient = {}
 local log = require("core.log"):new("mqtt.client")
 local Event = require("core.event")
+local defer = require("core.defer")
 
 function MClient:new(basePath, clientId, host, port)
     local o = {}
@@ -51,6 +52,12 @@ function MClient:new(basePath, clientId, host, port)
     o.m:on("connect", connected)
     o.m:on("offline", disconnected)
     o.m:on("message", processMessage)
+    if config.lwt ~= nil then
+        config.lwt.on = config.lwt.on or "on"
+        config.lwt.off = config.lwt.off or "off"
+        o:lwt(config.lwt.topic, config.lwt.off, 0, true)
+        o.lwtConfig = config.lwt
+    end
     connect()
     return o
 end
@@ -105,7 +112,7 @@ end
 
 function MClient:runOnConnect(callback, once)
     if self.connected then
-        callback()
+        defer(callback)
         if once then return end
     end
     self.OnConnect:listen(callback, once)
