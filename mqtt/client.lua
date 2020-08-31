@@ -3,11 +3,22 @@ local log = require("core.log"):new("mqtt.client")
 local Event = require("core.event")
 local defer = require("core.defer")
 
-function MClient:new(basePath, clientId, host, port)
+-- config object:
+-- base: MQTT topic base path
+-- clientid: MQTT client ID
+-- host: MQTT host name to connect to
+-- port: MQTT port (optional)
+-- lwt: object (optional) MQTT last will
+--      topic: topic to where to publish lwt
+--      on: message when online. Default "on"
+--      off: message when offline. Default "off"
+
+function MClient:new(config)
     local o = {}
     setmetatable(o, self)
     self.__index = self
-    o.base = basePath .. "/"
+    config.port = config.port or 1883
+    o.base = config.base .. "/"
     o.topics = {}
     o.reconnect = false
     o.OnConnect = Event:new()
@@ -20,6 +31,9 @@ function MClient:new(basePath, clientId, host, port)
             o.m:subscribe(topicName, topic.qos, topic.onSubscribe)
         end
         o.OnConnect:fire(o.reconnect)
+        if config.lwt ~= nil then
+            o:publish(config.lwt.topic, config.lwt.on, 0, true)
+        end
         o.reconnect = true
     end
     local connectionFailed
@@ -43,12 +57,12 @@ function MClient:new(basePath, clientId, host, port)
     connect = function()
         log:info("Connecting to MQTT ...")
         if ESP8266 then
-            o.m:connect(host, port, 0, 0, connected, disconnected)
+            o.m:connect(config.host, config.port, 0, 0, connected, disconnected)
         else
-            o.m:connect(host, port, 0, 0)
+            o.m:connect(config.host, config.port, 0, 0)
         end
     end
-    o.m = mqtt.Client(clientId, 120)
+    o.m = mqtt.Client(config.clientid, 120)
     o.m:on("connect", connected)
     o.m:on("offline", disconnected)
     o.m:on("message", processMessage)
@@ -118,14 +132,22 @@ function MClient:runOnConnect(callback, once)
     self.OnConnect:listen(callback, once)
 end
 
-function MClient:subclient(basePath)
+function MClient:subclient(base)
     local o = {}
     setmetatable(o, getmetatable(self))
-    o.base = self.base .. basePath .. "/"
+    o.base = self.base .. base .. "/"
     o.topics = self.topics
     o.m = self.m
     o.OnConnect = self.OnConnect
     return o
+end
+
+function MClient:lwt(topicName, message, qos, retain)
+    topicName = self:parseTopic(topicName)
+    message = message or "offline"
+    qos = qos or 0
+    retain = retain or false
+    self.m:lwt(topicName, message, qos, retain)
 end
 
 Topic = {}
