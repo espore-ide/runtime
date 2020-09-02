@@ -29,9 +29,11 @@ function App:init(config)
     mqtt:subscribe(pformat("espore/%s/update/set", firmware.name), 0,
                    checkUpdatesFromMQTT)
     mqtt:runOnConnect(function()
-        self.timer:unregister()
-        self.timer = nil
-        log:info("Will check on updates on MQTT message from now on.")
+        if self.timer ~= nil then
+            self.timer:unregister()
+            self.timer = nil
+            log:info("Will check on updates on MQTT message from now on.")
+        end
     end)
 
     self.lastChecked = node.uptime()
