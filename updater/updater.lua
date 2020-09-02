@@ -5,6 +5,7 @@ local pformat = pkg.require("core.stringutil").pformat
 local json = pkg.require("core.json")
 local log = pkg.require("core.log"):new("updater")
 local downloader = pkg.require("updater.downloader", true)
+local restart = pkg.require("core.restart")
 
 local CONFIG_FILE = "updater-config.json"
 local ETAG_FILE = "updater-etag.json"
@@ -19,11 +20,6 @@ local function readEtag()
 end
 
 local function writeEtag(etag) json.write(ETAG_FILE, etag) end
-
-local function restart()
-    log:warning("Restarting in 5 seconds ...")
-    tmr.create():alarm(5000, tmr.ALARM_SINGLE, function() node.restart() end)
-end
 
 Updater.RESULT_NO_UPDATES = 0
 Updater.RESULT_NEW_IMAGE = 1
