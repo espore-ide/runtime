@@ -1,5 +1,4 @@
 local Log = {}
-local su = require("core.stringutil")
 
 function Log:new(name)
     local o = {}
