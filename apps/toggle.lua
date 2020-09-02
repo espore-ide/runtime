@@ -51,17 +51,19 @@ function App:init(config)
 
     mqtt:runOnConnect(function(reconnect)
         statusTopic:publish(state.state, 0, true)
-        local ha = {
-            name = this.description,
-            unique_id = this.name,
-            command_topic = mqtt.base .. config.mqttTopic .. "/set",
-            state_topic = mqtt.base .. config.mqttTopic,
-            payload_on = "ON",
-            payload_off = "OFF"
-        }
-        mqtt:publish("light/" .. firmware.name:gsub("[^%w-_]", "") .. "/" ..
-                         this.name:gsub("[^%w-_]", "") .. "/config",
-                     sjson.encode(ha), 0, true)
+        local hass = require("integration.hass")
+        hass.publishConfig({
+            component = hass.LIGHT,
+            objectId = this.name,
+            config = {
+                name = this.description,
+                unique_id = this.name,
+                command_topic = mqtt.base .. config.mqttTopic .. "/set",
+                state_topic = mqtt.base .. config.mqttTopic,
+                payload_on = "ON",
+                payload_off = "OFF"
+            }
+        })
     end)
 
     log:info("Init: Input %d (%s, pin %d) -> Output %d (%s, pin %d)",

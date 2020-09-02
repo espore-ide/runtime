@@ -35,7 +35,8 @@ function App:init(config)
     local log = log:new("apps.roller/" .. self.name)
     local outputUp = OnOff:new({pin = outputUpPin})
     local outputDown = OnOff:new({pin = outputDownPin})
-    local statusTopic = mqtt:getTopic(config.mqttTopic, 0)
+    local positionTopic = mqtt:getTopic(config.mqttTopic, 0)
+    local stateTopic = mqtt:getTopic(config.mqttTopic .. "/state", 0)
 
     config.bounce = config.bounce or 50
     config.timeUp = config.timeUp or 10000
@@ -51,14 +52,18 @@ function App:init(config)
             if motor == RollerState.MOTOR_STATUS_UP then
                 outputDown:off()
                 outputUp:on()
+                stateTopic:publish("OPENING")
             elseif motor == RollerState.MOTOR_STATUS_DOWN then
                 outputUp:off()
                 outputDown:on()
+                stateTopic:publish("CLOSING")
             else
                 outputDown:off()
                 outputUp:off()
+                stateTopic:publish(pos == 0 and "OPEN" or pos == 100 and
+                                       "CLOSED" or "STOP")
             end
-            statusTopic:publish(stateStr(pos), 0, true)
+            positionTopic:publish(stateStr(pos), 0, true)
             log:info("pos=%s", tostring(pos))
         end
     })
@@ -85,8 +90,8 @@ function App:init(config)
         end
     })
 
-    local commandTopic = mqtt:subscribe(config.mqttTopic .. "/set", 0,
-                                        function(data)
+    local setPositionTopic = mqtt:subscribe(config.mqttTopic .. "/set", 0,
+                                            function(data)
         local pos = tonumber(data)
         if pos == nil and data == "STOP" then
             state:stop()
@@ -96,20 +101,30 @@ function App:init(config)
     end)
 
     mqtt:runOnConnect(function(reconnect)
-        statusTopic:publish(stateStr(state:getpos()), 0, true)
-        local ha = {
-            name = this.description,
-            unique_id = this.name,
-            command_topic = mqtt.base .. config.mqttTopic .. "/set",
-            state_topic = mqtt.base .. config.mqttTopic,
-            payload_open = "UP",
-            payload_close = "DOWN",
-            payload_stop = "STOP",
-            optimistic = true
-        }
-        mqtt:publish("cover/" .. firmware.name:gsub("[^%w-_]", "") .. "/" ..
-                         this.name:gsub("[^%w-_]", "") .. "/config",
-                     sjson.encode(ha), 0, true)
+        positionTopic:publish(stateStr(state:getpos()), 0, true)
+        local hass = require("integration.hass")
+        hass.publishConfig({
+            component = hass.COVER,
+            objectId = this.name,
+            config = {
+                name = this.description,
+                set_position_topic = mqtt.base .. config.mqttTopic .. "/set",
+                position_topic = mqtt.base .. config.mqttTopic,
+                position_open = 0,
+                position_closed = 100,
+                state_closed = "CLOSED",
+                state_open = "OPEN",
+                state_closing = "CLOSING",
+                state_opening = "OPENING",
+                payload_stop = "STOP",
+                payload_open = "0",
+                payload_close = "100",
+                optimistic = false,
+                device_class = "shutter",
+                command_topic = mqtt.base .. config.mqttTopic .. "/set",
+                state_topic = mqtt.base .. config.mqttTopic .. "/state"
+            }
+        })
     end)
 
     log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
