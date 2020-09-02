@@ -53,7 +53,6 @@ function defineUptimeSensor()
         component = hass.SENSOR,
         objectId = "uptime",
         config = {
-            device_class = "timestamp",
             state_topic = mqttsys.base .. "uptime",
             name = "device " .. firmware.name .. " uptime",
             unit_of_measurement = "s",
@@ -71,6 +70,18 @@ function defineFreeMemSensor()
             name = "device " .. firmware.name .. " free mem",
             unit_of_measurement = "bytes",
             icon = "mdi:memory"
+        }
+    })
+end
+
+function defineVersionSensor()
+    hass.publishConfig({
+        component = hass.SENSOR,
+        objectId = "version",
+        config = {
+            state_topic = mqttsys.base .. "version",
+            name = "device " .. firmware.name .. " version",
+            icon = "mdi:tag"
         }
     })
 end
@@ -99,6 +110,7 @@ return function(config)
         defineInfoSensor()
         defineUptimeSensor()
         defineFreeMemSensor()
+        defineVersionSensor()
     end)
 
     log:info("Name: %s, chip id: %s, version: %s. MQTT restart topic: %s%s",
