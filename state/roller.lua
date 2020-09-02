@@ -64,7 +64,7 @@ function RSS:new(config)
 
     -- fullyOpenCloseState builds the state handler for STATE_FULLY_OPENING and _CLOSING
     -- motor: motor state for this state (RSS.MOTOR_STATUS_UP or DOWN)
-    -- targetPos: 0 for fully open, and 100 for fully closed
+    -- targetPos: 0 for fully closed, and 100 for fully open
     -- time: The time it takes to move the shutter in this direction
     local fullyOpenCloseState = function(motor, targetPos, time)
         return function(state)
@@ -142,8 +142,8 @@ function RSS:new(config)
                 enter = function(target)
                     -- if full open/close is requested, that allows us to find the position of the motor,
                     -- otherwise we'll have to fully open (homing) and then try to achieve the target position
-                    return target == 100 and STATE_FULLY_CLOSING or
-                               (target == 0 and STATE_FULLY_OPENING or
+                    return target == 0 and STATE_FULLY_CLOSING or
+                               (target == 100 and STATE_FULLY_OPENING or
                                    STATE_HOMING), target
                 end
             },
@@ -156,7 +156,7 @@ function RSS:new(config)
                 end,
                 exit = function(newStateName, exitTrigger)
                     if exitTrigger == machine.TRIG_TIMEOUT then
-                        o.pos = 0
+                        o.pos = 100
                     end
                 end,
                 triggers = {
@@ -168,10 +168,10 @@ function RSS:new(config)
                     timeout = {time = config.timeUp, target = STATE_CHECKDIR}
                 }
             },
-            [STATE_FULLY_OPENING] = fullyOpenCloseState(RSS.MOTOR_STATUS_UP, 0,
-                                                        config.timeUp),
+            [STATE_FULLY_OPENING] = fullyOpenCloseState(RSS.MOTOR_STATUS_UP,
+                                                        100, config.timeUp),
             [STATE_FULLY_CLOSING] = fullyOpenCloseState(RSS.MOTOR_STATUS_DOWN,
-                                                        100, config.timeDown),
+                                                        0, config.timeDown),
             [STATE_POSITIONED] = {
                 enter = function()
                     callback(o.pos, RSS.MOTOR_STATUS_STOP, STATE_POSITIONED)
@@ -185,13 +185,13 @@ function RSS:new(config)
                 enter = function(target)
                     target = normalizePos(target)
                     return target == o.pos and STATE_POSITIONED or
-                               (target > o.pos and STATE_CLOSING or
+                               (target < o.pos and STATE_CLOSING or
                                    STATE_OPENING), target
                 end
             },
-            [STATE_OPENING] = openCloseState(RSS.MOTOR_STATUS_UP, -1,
+            [STATE_OPENING] = openCloseState(RSS.MOTOR_STATUS_UP, 1,
                                              config.timeUp),
-            [STATE_CLOSING] = openCloseState(RSS.MOTOR_STATUS_DOWN, 1,
+            [STATE_CLOSING] = openCloseState(RSS.MOTOR_STATUS_DOWN, -1,
                                              config.timeDown)
         }
     })

@@ -60,7 +60,7 @@ function App:init(config)
             else
                 outputDown:off()
                 outputUp:off()
-                stateTopic:publish(pos == 0 and "OPEN" or pos == 100 and
+                stateTopic:publish(pos == 100 and "OPEN" or pos == 0 and
                                        "CLOSED" or "STOP")
             end
             positionTopic:publish(stateStr(pos), 0, true)
@@ -72,7 +72,7 @@ function App:init(config)
         bounce = config.bounce,
         callback = function()
             if motorState == RollerState.MOTOR_STATUS_STOP then
-                state:setpos(0)
+                state:setpos(100)
             else
                 state:stop()
             end
@@ -83,7 +83,7 @@ function App:init(config)
         bounce = config.bounce,
         callback = function()
             if motorState == RollerState.MOTOR_STATUS_STOP then
-                state:setpos(100)
+                state:setpos(0)
             else
                 state:stop()
             end
@@ -110,15 +110,15 @@ function App:init(config)
                 name = this.description,
                 set_position_topic = mqtt.base .. config.mqttTopic .. "/set",
                 position_topic = mqtt.base .. config.mqttTopic,
-                position_open = 0,
-                position_closed = 100,
+                position_open = 100,
+                position_closed = 0,
                 state_closed = "CLOSED",
                 state_open = "OPEN",
                 state_closing = "CLOSING",
                 state_opening = "OPENING",
                 payload_stop = "STOP",
-                payload_open = "0",
-                payload_close = "100",
+                payload_open = "100",
+                payload_close = "0",
                 optimistic = false,
                 device_class = "shutter",
                 command_topic = mqtt.base .. config.mqttTopic .. "/set",
