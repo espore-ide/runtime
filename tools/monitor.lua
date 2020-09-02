@@ -2,6 +2,7 @@ local mqtt = require("mqtt.service"):subclient("espore/" .. firmware.name)
 local wifi = require("wifi.manager")
 local pkg = require("core.pkg")
 local pformat = require("core.stringutil").pformat
+local log = require("core.log"):new("monitor")
 
 local UPDATE_FAIL_FILE = "update.img.fail" -- see init.lua
 local trialVersion = true
@@ -21,7 +22,14 @@ function reportStats()
 end
 
 return function(config)
-    pkg.unload("tools.monitor")
+    local restart = function()
+        log:warning("Received restart request over MQTT.")
+        require("core.restart")()
+    end
+    local restartTopic = pformat("espore/%s/restart/set", firmware.name)
+    local gmqtt = require("mqtt.service")
+    gmqtt:subscribe("espore/all/restart/set", 0, restart)
+    gmqtt:subscribe(restartTopic, 0, restart)
 
     tmr.create():alarm((config.period or 60) * 1000, tmr.ALARM_AUTO, reportStats)
 
@@ -34,4 +42,9 @@ return function(config)
         mqtt:publish("sys/wifi/gw", wifi.info.gw, 0, true)
         mqtt:publish("sys/wifi/netmask", wifi.info.netmask, 0, true)
     end)
+
+    log:info("Name: %s, chip id: %s, version: %s. MQTT restart topic: %s%s",
+             firmware.name, node.chipid(), firmware.version, gmqtt.base,
+             restartTopic)
+
 end
