@@ -56,7 +56,8 @@ function defineUptimeSensor()
             device_class = "timestamp",
             state_topic = mqttsys.base .. "uptime",
             name = "device " .. firmware.name .. " uptime",
-            unit_of_measurement = "s"
+            unit_of_measurement = "s",
+            icon = "mdi:timer-sand"
         }
     })
 end
@@ -68,7 +69,8 @@ function defineFreeMemSensor()
         config = {
             state_topic = mqttsys.base .. "free",
             name = "device " .. firmware.name .. " free mem",
-            unit_of_measurement = "bytes"
+            unit_of_measurement = "bytes",
+            icon = "mdi:memory"
         }
     })
 end
