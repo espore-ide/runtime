@@ -127,15 +127,6 @@ function App:init(config)
         })
     end)
 
-    log:info("Init: InputUp %d (%s, pin %d) -> OutputUp %d (%s, pin %d), t=%d",
-             config.inputUp, portmap.inputs[config.inputUp].name, inputUpPin,
-             config.outputUp, portmap.outputs[config.outputUp].name,
-             outputUpPin, config.timeUp)
-    log:info(
-        "Init: InputDown %d (%s, pin %d) -> OutputDown %d (%s, pin %d), t=%d",
-        config.inputDown, portmap.inputs[config.inputDown].name, inputDownPin,
-        config.outputDown, portmap.outputs[config.outputDown].name,
-        outputDownPin, config.timeDown)
     self.outputUp = outputUp
     self.outputDown = outputDown
     self.inputUp = inputUp
