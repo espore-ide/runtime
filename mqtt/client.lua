@@ -116,11 +116,7 @@ end
 
 function MClient:publish(topicName, data, qos, retain, ackCallback)
     qos = qos or 0
-    if retain then
-        retain = 1
-    else
-        retain = 0
-    end
+    retain = retain and 1 or 0
     self.m:publish(self:parseTopic(topicName), data, qos, retain, ackCallback)
 end
 
