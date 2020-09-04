@@ -68,29 +68,4 @@ function App:terminate()
     self.state = nil
 end
 
-function App:ui()
-    local this = self
-    if self._ui == nil then
-        self._ui = {
-            actions = {
-                {
-                    type = "button",
-                    label = "TOGGLE",
-                    action = function() this.state:toggle() end
-                }
-            },
-            dashboard = {
-                {
-                    type = "value",
-                    label = "STATUS",
-                    value = function()
-                        return this.state.state
-                    end
-                }
-            }
-        }
-    end
-    return self._ui
-end
-
 return App
