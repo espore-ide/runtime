@@ -24,13 +24,8 @@ function ToggleState:set(state)
 end
 
 function ToggleState:toggle()
-    local newState
-    if self.state == ToggleState.STATUS_ON then
-        newState = ToggleState.STATUS_OFF
-    else
-        newState = ToggleState.STATUS_ON
-    end
-    self:set(newState)
+    self:set(self.state == ToggleState.STATUS_ON and ToggleState.STATUS_OFF or
+                 ToggleState.STATUS_ON)
 end
 
 function ToggleState:destroy() end

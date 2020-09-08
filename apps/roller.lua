@@ -64,7 +64,6 @@ function App:init(config)
                                        "CLOSED" or "STOP")
             end
             positionTopic:publish(stateStr(pos), 0, true)
-            log:info("pos=%s", tostring(pos))
         end
     })
     local inputUp = PushButton:new({
