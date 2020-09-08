@@ -42,7 +42,8 @@ function defineInfoSensor()
         mac = wifi.info.mac,
         ssid = wifi.info.ssid,
         gw = wifi.info.gw,
-        netmask = wifi.info.netmask
+        netmask = wifi.info.netmask,
+        firmwareName = firmware.name
     }
     mqttsys:publish("info", sjson.encode(info), 0, true)
 
