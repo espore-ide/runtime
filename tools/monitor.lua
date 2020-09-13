@@ -3,30 +3,23 @@ local mqttsys = mqtt:subclient("espore/" .. firmware.name .. "/sys")
 local pkg = require("core.pkg")
 local pformat = require("core.stringutil").pformat
 local log = require("core.log"):new("monitor")
+local infoMonitor = require("tools.info")
 local UPDATE_FAIL_FILE = "update.img.fail" -- see init.lua
 local trialVersion = true
 
-function reportInfo()
+infoMonitor.subscribe("node", function()
     trialVersion = trialVersion and file.exists(UPDATE_FAIL_FILE)
     local version = trialVersion and firmware.version .. "-trial" or
                         firmware.version
-    local wifi = require("wifi.manager")
-
-    local info = {
+    return {
         chipid = node.chipid(),
-        ip = wifi.info.ip,
-        mac = wifi.info.mac,
-        ssid = wifi.info.ssid,
-        gw = wifi.info.gw,
-        netmask = wifi.info.netmask,
         firmwareName = firmware.name,
         firmwareVersion = version
     }
-    mqttsys:publish("info", sjson.encode(info), 0, true)
-end
+end)
 
 function reportStats(forceReport)
-    if trialVersion or forceReport then reportInfo() end
+    if trialVersion or forceReport then infoMonitor.update() end
     mqttsys:publish("uptime", pformat("%d", math.floor(node.uptime() / 1000000)))
     mqttsys:publish("free", pformat("%d", node.heap()))
 end
@@ -75,7 +68,7 @@ return function(config)
     end)
 
     log:info("Name: %s, chip id: %s, version: %s. MQTT restart topic: %s%s",
-             firmware.name, node.chipid(), firmware.version, gmqtt.base,
+             firmware.name, node.chipid(), firmware.version, mqtt.base,
              restartTopic)
 
 end

@@ -2,9 +2,22 @@
 -- datafile: site-app-config.json
 local log = require("core.log"):new("launcher")
 local defer = require("core.defer")
+local infoMonitor = require("tools.info")
 local Launcher = {apps = {}}
 
-local function launchApp(App, appInfo)
+infoMonitor.subscribe("apps", function()
+    local appList = {}
+    for _, app in ipairs(Launcher.apps) do
+        table.insert(appList, {
+            name = app.name,
+            description = app.description,
+            module = app.module
+        })
+    end
+    return {list = appList}
+end)
+
+function launchApp(App, appInfo)
     log:info("Launching %s ...", appInfo.name)
     local ok, instance = pcall(App.new, App)
     if not ok then
@@ -13,6 +26,7 @@ local function launchApp(App, appInfo)
     end
     instance.name = appInfo.name
     instance.description = appInfo.description
+    instance.module = appInfo.module
     local ok, err = pcall(instance.init, instance, appInfo.config)
     if not ok then
         log:error("Error initializing %s: %s", appInfo.name, err)
@@ -21,7 +35,7 @@ local function launchApp(App, appInfo)
     table.insert(Launcher.apps, instance)
 end
 
-local function launch(appInfo)
+function launch(appInfo)
     local err
     local ok, App = pcall(require, appInfo.module)
     if ok then
@@ -34,7 +48,7 @@ local function launch(appInfo)
     end
 end
 
-local function main()
+function main()
     local json = require("core.json")
     local configs = {
         json.read("app-config.json"), json.read("site-app-config.json")
@@ -57,6 +71,7 @@ local function main()
             log:info("%d application(s) launched", i)
         end
     end)
+    defer(function() infoMonitor.update() end)
 end
 
 main()
