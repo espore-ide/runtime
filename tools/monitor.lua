@@ -34,31 +34,22 @@ end
 function defineSensors()
     local hass = require("integration.hass")
     hass.publishConfig({
-        component = hass.BINARY_SENSOR,
-        objectId = "info",
-        config = {
-            device_class = "connectivity",
-            json_attributes_topic = mqttsys.base .. "info",
-            payload_on = mqtt.lwtConfig.on,
-            payload_off = mqtt.lwtConfig.off,
-            state_topic = mqtt.base .. mqtt.lwtConfig.topic,
-            name = "device " .. firmware.name
-        }
-    })
-    hass.publishConfig({
         component = hass.SENSOR,
         objectId = "uptime",
         config = {
+            json_attributes_topic = mqttsys.base .. "info",
             state_topic = mqttsys.base .. "uptime",
             name = "device " .. firmware.name .. " uptime",
             unit_of_measurement = "s",
-            icon = "mdi:timer-sand"
+            icon = "mdi:timer-sand",
+            expire_after = 65
         }
     })
     hass.publishConfig({
         component = hass.SENSOR,
         objectId = "free",
         config = {
+            json_attributes_topic = mqttsys.base .. "info",
             state_topic = mqttsys.base .. "free",
             name = "device " .. firmware.name .. " free mem",
             unit_of_measurement = "bytes",
