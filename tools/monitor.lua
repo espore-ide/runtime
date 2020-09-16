@@ -60,7 +60,8 @@ return function(config)
     mqtt:subscribe("espore/all/restart/set", 0, restart)
     mqtt:subscribe(restartTopic, 0, restart)
 
-    tmr.create():alarm((config.period or 60) * 1000, tmr.ALARM_AUTO, reportStats)
+    tmr.create():alarm((config.period or 60) * 1000, tmr.ALARM_AUTO,
+                       function() reportStats(false) end)
 
     mqtt:runOnConnect(function()
         defineSensors()
