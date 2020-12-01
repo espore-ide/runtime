@@ -103,9 +103,11 @@ Updater.checkNodeMCU = function(callback)
     end)
 end
 
-Updater.update = function(callback)
+Updater.update = function(callback, configOverride)
+    if type(configOverride) == "table" then config = configOverride end
     local function checkForFirmwareUpdates(callback)
-        log:info("Checking for firmware updates...")
+        log:info("Checking for firmware updates on %s:%d%s...", config.host,
+                 config.port, config.basePath)
         Updater.checkNodeMCU(function(result)
             if type(result) == "string" then
                 log:error("Error updating device firmware: %s", result)
@@ -124,7 +126,8 @@ Updater.update = function(callback)
     end
 
     local function checkForAppUpdates(callback)
-        log:info("Checking for application updates...")
+        log:info("Checking for application updates on %s:%d%s...", config.host,
+                 config.port, config.basePath)
         Updater.check(function(result)
             local err
             if type(result) == "string" then

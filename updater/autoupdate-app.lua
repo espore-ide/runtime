@@ -17,8 +17,10 @@ end
 function App:init(config)
     self.timer = tmr.create()
 
-    local function checkUpdatesFromMQTT()
-        self:checkUpdates("mqtt message received")
+    local function checkUpdatesFromMQTT(data)
+        local ok, config = pcall(sjson.decode, data)
+        self:checkUpdates("mqtt message received",
+                          ok and type(config) == "table" and config)
     end
 
     log:info("Will check for updates every %d seconds until MQTT connects",
@@ -40,7 +42,7 @@ function App:init(config)
     updateNow = function() self:checkUpdates("User command") end
 end
 
-function App:checkUpdates(reason)
+function App:checkUpdates(reason, configOverride)
     log:info("Checking for updates due to %s", reason)
     self.lastChecked = node.uptime()
     updater.update(function(result)
@@ -49,7 +51,7 @@ function App:checkUpdates(reason)
         else
             log:info("Update check finished successfully")
         end
-    end)
+    end, configOverride)
 end
 
 function App:terminate()
