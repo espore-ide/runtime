@@ -2,6 +2,8 @@ local pformat = require("core.stringutil").pformat
 local mqtt = require("mqtt.service")
 local H = {}
 
+local DISCOVERY_PREFIX = "homeassistant"
+
 H.device = function()
     local wifi = require("wifi.manager")
     return {
@@ -33,8 +35,9 @@ H.publishConfig = function(p)
     p.nodeId = p.nodeId or firmware.name
     p.config.device = H.device()
     p.config.unique_id = p.config.unique_id or p.nodeId .. "_" .. p.objectId
-    mqtt:publish(pformat("%s/%s/%s/config", p.component, H.hclean(p.nodeId),
-                         H.hclean(p.objectId)), sjson.encode(p.config), 0, true)
+    mqtt:publish(pformat(":%s/%s/%s/%s/config", DISCOVERY_PREFIX, p.component,
+                         H.hclean(p.nodeId), H.hclean(p.objectId)),
+                 sjson.encode(p.config), 0, true)
 
 end
 
