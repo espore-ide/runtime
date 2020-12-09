@@ -53,7 +53,6 @@ WifiManager.start = function()
     WifiManager.OnConnect:listen(onconnect)
 
     wifi.mode(wifi.STATION)
-    wifi.start()
 
     local wifiCfg = json.read(WIFI_CONFIG_FILE)
     if wifiCfg == nil then
@@ -76,7 +75,11 @@ WifiManager.start = function()
         connectNext()
     end)
 
-    connectNext()
+    wifi.sta.on("start", function()
+        wifi.sta.sethostname(firmware.name:gsub("[^%w-]", ""))
+        connectNext()
+    end)
+    wifi.start()
 end
 tmr.create():alarm(100, tmr.ALARM_SINGLE, function() WifiManager.start() end)
 
