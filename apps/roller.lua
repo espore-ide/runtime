@@ -1,5 +1,6 @@
 local RollerState = require("state.roller")
-local PushButton = require("drivers.input.pushbutton")
+local Debounced = require("drivers.input.debounced")
+local HoldButton = require("drivers.input.holdbutton")
 local OnOff = require("drivers.output.onoff")
 local portmap = require("portmap.portmap")
 local log = require("core.log")
@@ -41,6 +42,7 @@ function App:init(config)
     config.bounce = config.bounce or 50
     config.timeUp = config.timeUp or 10000
     config.timeDown = config.timeDown or 10000
+    config.hold = config.hold or false
 
     local motorState
     local state = RollerState:new({
@@ -66,27 +68,34 @@ function App:init(config)
             positionTopic:publish(stateStr(pos), 0, true)
         end
     })
-    local inputUp = PushButton:new({
+    local buttonHandler = function(targetPos)
+        local buttonDown = false
+        return function(buttonState)
+            if buttonState == 0 then -- buttonState 0 means button down
+                buttonDown = true
+                if motorState == RollerState.MOTOR_STATUS_STOP then
+                    state:setpos(targetPos)
+                else
+                    state:stop()
+                end
+            else
+                if config.hold and buttonDown then state:stop() end
+                buttonDown = false
+            end
+        end
+    end
+
+    local Button = config.hold and HoldButton or Debounced
+
+    local inputUp = Button:new({
         pin = inputUpPin,
         bounce = config.bounce,
-        callback = function()
-            if motorState == RollerState.MOTOR_STATUS_STOP then
-                state:setpos(100)
-            else
-                state:stop()
-            end
-        end
+        callback = buttonHandler(100)
     })
-    local inputDown = PushButton:new({
+    local inputDown = Button:new({
         pin = inputDownPin,
         bounce = config.bounce,
-        callback = function()
-            if motorState == RollerState.MOTOR_STATUS_STOP then
-                state:setpos(0)
-            else
-                state:stop()
-            end
-        end
+        callback = buttonHandler(0)
     })
 
     local setPositionTopic = mqtt:subscribe(config.mqttTopic .. "/set", 0,
@@ -100,7 +109,10 @@ function App:init(config)
     end)
 
     mqtt:runOnConnect(function(reconnect)
-        positionTopic:publish(stateStr(state:getpos()), 0, true)
+        local pos = state:getpos()
+        positionTopic:publish(stateStr(pos), 0, true)
+        stateTopic:publish(pos == 100 and "OPEN" or pos == 0 and "CLOSED" or
+                               "STOP")
         local hass = require("integration.hass")
         hass.publishConfig({
             component = hass.COVER,
