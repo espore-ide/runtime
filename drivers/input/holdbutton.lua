@@ -16,13 +16,18 @@ function HoldButton:new(config)
 
     local avg = 0
     local buttonDown = false
+    local timeHeld = 0
 
-    o.timer:register(50, tmr.ALARM_AUTO, function()
+    config.confidence = config.confidence or 0.99
+    config.timerResolution = config.timerResolution or 50
+
+    o.timer:register(config.timerResolution, tmr.ALARM_AUTO, function()
         avg = (avg + gpio.read(config.pin)) / 2
-        if avg > 0.99 then
+        timeHeld = timeHeld + config.timerResolution
+        if avg > config.confidence then
             buttonDown = false
             o.timer:stop()
-            config.callback(1)
+            config.callback(1, timeHeld)
         end
     end)
 
@@ -35,6 +40,7 @@ function HoldButton:new(config)
             if state == 0 and not buttonDown then
                 buttonDown = true
                 avg = 0
+                timeHeld = 0
                 o.timer:start()
                 config.callback(0)
             end
