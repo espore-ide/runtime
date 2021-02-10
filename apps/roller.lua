@@ -1,13 +1,17 @@
 local RollerState = require("state.roller")
-local Debounced = require("drivers.input.debounced")
+local MultiButton = require("drivers.input.multibutton")
 local HoldButton = require("drivers.input.holdbutton")
+local mbtrigger = require("drivers.output.mbtrigger")
 local OnOff = require("drivers.output.onoff")
 local portmap = require("portmap.portmap")
 local log = require("core.log")
 local mqtt = require("mqtt.service")
 
 local App = {}
-
+local count2type = {
+    "button_long_press", "button_short_press", "button_double_press",
+    "button_triple_press", "button_quadruple_press", "button_quintuple_press"
+}
 function App:new()
     local o = {}
     setmetatable(o, self)
@@ -68,7 +72,7 @@ function App:init(config)
             positionTopic:publish(stateStr(pos), 0, true)
         end
     })
-    local buttonHandler = function(targetPos)
+    local makeButtonHandler = function(targetPos)
         local buttonDown = false
         return function(buttonState)
             if buttonState == 0 then -- buttonState 0 means button down
@@ -85,18 +89,51 @@ function App:init(config)
         end
     end
 
-    local Button = config.hold and HoldButton or Debounced
+    local inputUp
+    local inputDown
 
-    local inputUp = Button:new({
-        pin = inputUpPin,
-        bounce = config.bounce,
-        callback = buttonHandler(100)
-    })
-    local inputDown = Button:new({
-        pin = inputDownPin,
-        bounce = config.bounce,
-        callback = buttonHandler(0)
-    })
+    if config.hold then
+        inputUp = HoldButton:new({
+            pin = inputUpPin,
+            bounce = config.bounce,
+            callback = makeButtonHandler(100)
+        })
+        inputDown = HoldButton:new({
+            pin = inputDownPin,
+            bounce = config.bounce,
+            callback = makeButtonHandler(0)
+        })
+    else
+        local makeMultibuttonHandler = function(targetPos)
+            local dir = targetPos == 100 and "-up" or "-down"
+            local btnHandler = makeButtonHandler(targetPos)
+            local trigger = mbtrigger(this.name .. dir, this.description .. dir,
+                                      config.mqttTopic .. "/trigger" .. dir)
+            return function(count)
+                if count == 1 then
+                    btnHandler(0) -- simulate press
+                    btnHandler(1)
+                end
+                trigger(count)
+            end
+        end
+
+        inputUp = MultiButton:new({
+            pin = inputUpPin,
+            bounce = config.bounce or 50,
+            multiClickTimeout = config.multiClickTimeout or 500,
+            longPress = config.longPress or 500,
+            callback = makeMultibuttonHandler(100)
+        })
+        inputDown = MultiButton:new({
+            pin = inputDownPin,
+            bounce = config.bounce or 50,
+            multiClickTimeout = config.multiClickTimeout or 500,
+            longPress = config.longPress or 500,
+            callback = makeMultibuttonHandler(0)
+        })
+
+    end
 
     local setPositionTopic = mqtt:subscribe(config.mqttTopic .. "/set", 0,
                                             function(data)
